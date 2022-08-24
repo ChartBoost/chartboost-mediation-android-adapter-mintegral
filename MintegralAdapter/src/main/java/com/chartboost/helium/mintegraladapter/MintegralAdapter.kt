@@ -12,6 +12,7 @@ import com.mbridge.msdk.interstitialvideo.out.MBBidInterstitialVideoHandler
 import com.mbridge.msdk.interstitialvideo.out.MBInterstitialVideoHandler
 import com.mbridge.msdk.mbbid.out.BidManager
 import com.mbridge.msdk.out.*
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -40,6 +41,16 @@ class MintegralAdapter : PartnerAdapter {
          */
         private val TAG = "[${this::class.java.simpleName}]"
     }
+
+    /**
+     * Lambda to be called for a successful Mintegral ad show.
+     */
+    private var onShowSuccess: () -> Unit = {}
+
+    /**
+     * Lambda to be called for a failed Mintegral ad show.
+     */
+    private var onShowFailure: () -> Unit = {}
 
     /**
      * Track whether the Mintegral SDK has been successfully initialized.
@@ -224,14 +235,23 @@ class MintegralAdapter : PartnerAdapter {
      */
     override suspend fun show(context: Context, partnerAd: PartnerAd): Result<PartnerAd> {
         return partnerAd.ad?.let {
-            when (it) {
-                is MBInterstitialVideoHandler -> if (it.isReady) it.show()
-                is MBBidInterstitialVideoHandler -> if (it.isBidReady) it.showFromBid()
-                is MBRewardVideoHandler -> if (it.isReady) it.show()
-                is MBBidRewardVideoHandler -> if (it.isBidReady) it.showFromBid()
-                is MBBannerView -> Result.success(partnerAd)
+            return suspendCancellableCoroutine { continuation ->
+                when (it) {
+                    is MBInterstitialVideoHandler -> if (it.isReady) it.show()
+                    is MBBidInterstitialVideoHandler -> if (it.isBidReady) it.showFromBid()
+                    is MBRewardVideoHandler -> if (it.isReady) it.show()
+                    is MBBidRewardVideoHandler -> if (it.isBidReady) it.showFromBid()
+                    is MBBannerView -> continuation.resume(Result.success(partnerAd))
+                }
+
+                onShowSuccess = {
+                    continuation.resume(Result.success(partnerAd))
+                }
+
+                onShowFailure = {
+                    continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL)))
+                }
             }
-            Result.success(partnerAd)
         } ?: run {
             LogController.e("$TAG Mintegral failed to show ad because the ad is null.")
             Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
@@ -474,6 +494,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onAdShow(p0: MBridgeIds?) {
+                    onShowSuccess()
                 }
 
                 override fun onAdClose(p0: MBridgeIds?, p1: RewardInfo?) {
@@ -483,6 +504,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onShowFail(p0: MBridgeIds?, p1: String?) {
+                    onShowFailure()
                 }
 
                 override fun onVideoAdClicked(p0: MBridgeIds?) {
@@ -542,6 +564,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onAdShow(p0: MBridgeIds?) {
+                    onShowSuccess()
                 }
 
                 override fun onAdClose(p0: MBridgeIds?, p1: RewardInfo?) {
@@ -551,6 +574,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onShowFail(p0: MBridgeIds?, p1: String?) {
+                    onShowFailure()
                 }
 
                 override fun onVideoAdClicked(p0: MBridgeIds?) {
@@ -634,6 +658,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onAdShow(p0: MBridgeIds?) {
+                    onShowSuccess()
                 }
 
                 override fun onAdClose(p0: MBridgeIds?, rewardInfo: RewardInfo?) {
@@ -646,6 +671,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onShowFail(p0: MBridgeIds?, p1: String?) {
+                    onShowFailure()
                 }
 
                 override fun onVideoAdClicked(p0: MBridgeIds?) {
@@ -699,6 +725,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onAdShow(p0: MBridgeIds?) {
+                    onShowSuccess()
                 }
 
                 override fun onAdClose(p0: MBridgeIds?, rewardInfo: RewardInfo?) {
@@ -711,6 +738,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onShowFail(p0: MBridgeIds?, p1: String?) {
+                    onShowFailure()
                 }
 
                 override fun onVideoAdClicked(p0: MBridgeIds?) {
