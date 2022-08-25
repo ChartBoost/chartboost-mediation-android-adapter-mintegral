@@ -22,6 +22,18 @@ import kotlin.coroutines.suspendCoroutine
 class MintegralAdapter : PartnerAdapter {
     companion object {
         /**
+         * Flag that can optionally be set to mute video creatives served by Mintegral. This can be
+         * set at any time and will take effect for the next ad request.
+         *
+         * https://dev.mintegral.com/doc/index.html?file=sdk-m_sdk-android&lang=en
+         */
+        public var mute = false
+            set(value) {
+                field = value
+                LogController.d("Mintegral video creatives will be ${if (value) "muted" else "unmuted"}.")
+            }
+
+        /**
          * Key for parsing the Mintegral app ID
          */
         private const val APP_ID_KEY = "mintegral_app_id"
@@ -475,6 +487,7 @@ class MintegralAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         return suspendCoroutine { continuation ->
             val ad = MBBidInterstitialVideoHandler(context, request.partnerPlacement, partnerUnitId)
+            ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
             ad.setInterstitialVideoListener(object : InterstitialVideoListener {
                 override fun onLoadSuccess(p0: MBridgeIds?) {
                 }
@@ -545,6 +558,7 @@ class MintegralAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         return suspendCoroutine { continuation ->
             val ad = MBInterstitialVideoHandler(context, request.partnerPlacement, partnerUnitId)
+            ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
             ad.setInterstitialVideoListener(object : InterstitialVideoListener {
                 override fun onLoadSuccess(p0: MBridgeIds?) {
                 }
@@ -642,6 +656,7 @@ class MintegralAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         return suspendCoroutine { continuation ->
             val ad = MBBidRewardVideoHandler(context, request.partnerPlacement, partnerUnitId)
+            ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
             ad.setRewardVideoListener(object : RewardVideoListener {
                 override fun onVideoLoadSuccess(p0: MBridgeIds?) {
                     continuation.resume(
@@ -709,6 +724,7 @@ class MintegralAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         return suspendCoroutine { continuation ->
             val ad = MBRewardVideoHandler(context, request.partnerPlacement, partnerUnitId)
+            ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
             ad.setRewardVideoListener(object : RewardVideoListener {
                 override fun onVideoLoadSuccess(p0: MBridgeIds?) {
                     continuation.resume(
