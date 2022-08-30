@@ -47,11 +47,6 @@ class MintegralAdapter : PartnerAdapter {
          * Key for parsing the Mintegral unity ID
          */
         private const val UNIT_ID_KEY = "mintegral_unit_id"
-
-        /**
-         * The tag used for log messages.
-         */
-        private val TAG = "[${this::class.java.simpleName}]"
     }
 
     /**
@@ -127,11 +122,11 @@ class MintegralAdapter : PartnerAdapter {
                     object : SDKInitStatusListener {
                         override fun onInitSuccess() {
                             isSdkInitialized = true
-                            continuation.resume(Result.success(LogController.i("$TAG Mintegral successfully initialized.")))
+                            continuation.resume(Result.success(LogController.i("Mintegral successfully initialized.")))
                         }
 
                         override fun onInitFail(error: String?) {
-                            LogController.e("$TAG Mintegral failed to initialize. Error: $error")
+                            LogController.e("Mintegral failed to initialize. Error: $error")
                             continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
                         }
                     }
@@ -265,7 +260,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
             }
         } ?: run {
-            LogController.e("$TAG Mintegral failed to show ad because the ad is null.")
+            LogController.e("Mintegral failed to show ad because the ad is null.")
             Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
         }
     }
@@ -285,7 +280,7 @@ class MintegralAdapter : PartnerAdapter {
             }
             Result.success(partnerAd)
         } ?: run {
-            LogController.e("$TAG Mintegral failed to invalidate ad because the ad is null.")
+            LogController.e("Mintegral failed to invalidate ad because the ad is null.")
             Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
         }
     }
@@ -303,11 +298,11 @@ class MintegralAdapter : PartnerAdapter {
 
         return when {
             appId.isNullOrEmpty() -> {
-                LogController.e("$TAG $prefix. The app ID is null/empty.")
+                LogController.e("$prefix. The app ID is null/empty.")
                 false
             }
             appKey.isNullOrEmpty() -> {
-                LogController.e("$TAG $prefix. The app key is null/empty.")
+                LogController.e("$prefix. The app key is null/empty.")
                 false
             }
             else -> true
@@ -332,15 +327,15 @@ class MintegralAdapter : PartnerAdapter {
 
         return when {
             !isSdkInitialized -> {
-                LogController.e("$TAG $prefix. The SDK is not initialized.")
+                LogController.e("$prefix. The SDK is not initialized.")
                 false
             }
             context !is Activity -> {
-                LogController.e("$TAG $prefix. Context must be an Activity.")
+                LogController.e("$prefix. Context must be an Activity.")
                 false
             }
             partnerPlacement.isEmpty() || partnerUnitId.isEmpty() -> {
-                LogController.e("$TAG $prefix. Missing placement or unit ID.")
+                LogController.e("$prefix. Missing placement or unit ID.")
                 false
             }
             else -> true
@@ -377,7 +372,7 @@ class MintegralAdapter : PartnerAdapter {
             ad.setBannerAdListener(object : BannerAdListener {
                 override fun onLoadFailed(p0: MBridgeIds?, error: String?) {
                     LogController.e(
-                        "$TAG Mintegral failed to load banner ad for " +
+                        "Mintegral failed to load banner ad for " +
                                 "${request.partnerPlacement}. Error: $error"
                     )
                     continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
@@ -500,7 +495,7 @@ class MintegralAdapter : PartnerAdapter {
 
                 override fun onVideoLoadFail(p0: MBridgeIds?, error: String?) {
                     LogController.e(
-                        "$TAG Mintegral failed to load bidding interstitial ad for " +
+                        "Mintegral failed to load bidding interstitial ad for " +
                                 "${request.partnerPlacement}. Error: $error"
                     )
                     continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
@@ -571,7 +566,7 @@ class MintegralAdapter : PartnerAdapter {
 
                 override fun onVideoLoadFail(p0: MBridgeIds?, error: String?) {
                     LogController.e(
-                        "$TAG Mintegral failed to load bidding interstitial ad for " +
+                        "Mintegral failed to load bidding interstitial ad for " +
                                 "${request.partnerPlacement}. Error: $error"
                     )
                     continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
@@ -668,7 +663,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onVideoLoadFail(p0: MBridgeIds?, error: String?) {
-                    LogController.e("$TAG Mintegral failed to load bidding rewarded ad with error $error")
+                    LogController.e("Mintegral failed to load bidding rewarded ad with error $error")
                     continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
                 }
 
@@ -736,7 +731,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onVideoLoadFail(p0: MBridgeIds?, error: String?) {
-                    LogController.e("$TAG Mintegral failed to load bidding rewarded ad with error $error")
+                    LogController.e("Mintegral failed to load bidding rewarded ad with error $error")
                     continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
                 }
 
