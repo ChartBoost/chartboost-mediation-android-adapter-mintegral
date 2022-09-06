@@ -5,7 +5,10 @@ import android.content.Context
 import android.util.Size
 import android.widget.FrameLayout
 import com.chartboost.heliumsdk.domain.*
-import com.chartboost.heliumsdk.utils.LogController
+import com.chartboost.heliumsdk.utils.PartnerLogController
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.*
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterFailureEvents.*
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterSuccessEvents.*
 import com.mbridge.msdk.MBridgeConstans
 import com.mbridge.msdk.interstitialvideo.out.InterstitialVideoListener
 import com.mbridge.msdk.interstitialvideo.out.MBBidInterstitialVideoHandler
@@ -30,7 +33,10 @@ class MintegralAdapter : PartnerAdapter {
         public var mute = false
             set(value) {
                 field = value
-                LogController.d("Mintegral video creatives will be ${if (value) "muted" else "unmuted"}.")
+                PartnerLogController.log(
+                    CUSTOM,
+                    "Mintegral video creatives will be ${if (value) "muted" else "unmuted"}."
+                )
             }
 
         /**
@@ -107,6 +113,8 @@ class MintegralAdapter : PartnerAdapter {
         context: Context,
         partnerConfiguration: PartnerConfiguration
     ): Result<Unit> {
+        PartnerLogController.log(SETUP_STARTED)
+
         val appId = partnerConfiguration.credentials[APP_ID_KEY]
         val appKey = partnerConfiguration.credentials[APP_KEY_KEY]
 
@@ -122,11 +130,17 @@ class MintegralAdapter : PartnerAdapter {
                     object : SDKInitStatusListener {
                         override fun onInitSuccess() {
                             isSdkInitialized = true
-                            continuation.resume(Result.success(LogController.i("Mintegral successfully initialized.")))
+                            continuation.resume(
+                                Result.success(
+                                    PartnerLogController.log(
+                                        SETUP_SUCCEEDED
+                                    )
+                                )
+                            )
                         }
 
                         override fun onInitFail(error: String?) {
-                            LogController.e("Mintegral failed to initialize. Error: $error")
+                            PartnerLogController.log(SETUP_FAILED, "$error")
                             continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
                         }
                     }
@@ -202,6 +216,8 @@ class MintegralAdapter : PartnerAdapter {
         context: Context,
         request: PreBidRequest
     ): Map<String, String> {
+        PartnerLogController.log(BIDDER_INFO_FETCH_STARTED)
+        PartnerLogController.log(BIDDER_INFO_FETCH_SUCCEEDED)
         return mapOf<String, String>("buyeruid" to BidManager.getBuyerUid(context))
     }
 
@@ -209,16 +225,18 @@ class MintegralAdapter : PartnerAdapter {
      * Attempt to load a Mintegral ad.
      *
      * @param context The current [Context].
-     * @param request An [AdLoadRequest] instance containing relevant data for the current ad load call.
+     * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param partnerAdListener A [PartnerAdListener] to notify Helium of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
     override suspend fun load(
         context: Context,
-        request: AdLoadRequest,
+        request: PartnerAdLoadRequest,
         partnerAdListener: PartnerAdListener
     ): Result<PartnerAd> {
+        PartnerLogController.log(LOAD_STARTED)
+
         val unitId = request.partnerSettings[UNIT_ID_KEY] ?: ""
 
         if (!canLoadAd(context, request.partnerPlacement, unitId)) {
@@ -241,6 +259,8 @@ class MintegralAdapter : PartnerAdapter {
      * @return Result.success(PartnerAd) if the ad was successfully shown, Result.failure(Exception) otherwise.
      */
     override suspend fun show(context: Context, partnerAd: PartnerAd): Result<PartnerAd> {
+        PartnerLogController.log(SHOW_STARTED)
+
         return partnerAd.ad?.let {
             return suspendCancellableCoroutine { continuation ->
                 when (it) {
@@ -252,15 +272,17 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 onShowSuccess = {
+                    PartnerLogController.log(SHOW_SUCCEEDED)
                     continuation.resume(Result.success(partnerAd))
                 }
 
                 onShowFailure = {
+                    PartnerLogController.log(SHOW_FAILED)
                     continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL)))
                 }
             }
         } ?: run {
-            LogController.e("Mintegral failed to show ad because the ad is null.")
+            PartnerLogController.log(SHOW_FAILED, "Ad is null.")
             Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
         }
     }
@@ -273,14 +295,18 @@ class MintegralAdapter : PartnerAdapter {
      * @return Result.success(PartnerAd) if the ad was successfully discarded, Result.failure(Exception) otherwise.
      */
     override suspend fun invalidate(partnerAd: PartnerAd): Result<PartnerAd> {
+        PartnerLogController.log(INVALIDATE_STARTED)
+
         // Only invalidating banner ads as there are no fullscreen invalidation APIs.
         return partnerAd.ad?.let {
             if (it is MBBannerView) {
                 it.release()
             }
+
+            PartnerLogController.log(INVALIDATE_SUCCEEDED)
             Result.success(partnerAd)
         } ?: run {
-            LogController.e("Mintegral failed to invalidate ad because the ad is null.")
+            PartnerLogController.log(INVALIDATE_FAILED, "Ad is null.")
             Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
         }
     }
@@ -294,15 +320,13 @@ class MintegralAdapter : PartnerAdapter {
      * @return True if the Mintegral SDK can initialize, false otherwise.
      */
     private fun canInitialize(appId: String?, appKey: String?): Boolean {
-        val prefix = "Mintegral failed to initialize"
-
         return when {
             appId.isNullOrEmpty() -> {
-                LogController.e("$prefix. The app ID is null/empty.")
+                PartnerLogController.log(SETUP_FAILED, "The app ID is null/empty.")
                 false
             }
             appKey.isNullOrEmpty() -> {
-                LogController.e("$prefix. The app key is null/empty.")
+                PartnerLogController.log(SETUP_FAILED, "The app key is null/empty.")
                 false
             }
             else -> true
@@ -323,19 +347,17 @@ class MintegralAdapter : PartnerAdapter {
         partnerPlacement: String,
         partnerUnitId: String
     ): Boolean {
-        val prefix = "Mintegral failed to load ad"
-
         return when {
             !isSdkInitialized -> {
-                LogController.e("$prefix. The SDK is not initialized.")
+                PartnerLogController.log(LOAD_FAILED, "The SDK is not initialized.")
                 false
             }
             context !is Activity -> {
-                LogController.e("$prefix. Context must be an Activity.")
+                PartnerLogController.log(LOAD_FAILED, "Context must be an Activity.")
                 false
             }
             partnerPlacement.isEmpty() || partnerUnitId.isEmpty() -> {
-                LogController.e("$prefix. Missing placement or unit ID.")
+                PartnerLogController.log(LOAD_FAILED, "Missing placement or unit ID.")
                 false
             }
             else -> true
@@ -346,7 +368,7 @@ class MintegralAdapter : PartnerAdapter {
      * Attempt to load a Mintegral banner ad.
      *
      * @param context The current [Context].
-     * @param request An [AdLoadRequest] instance containing relevant data for the current ad load call.
+     * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param partnerUnitId The Mintegral unit ID for the ad.
      * @param listener A [PartnerAdListener] to notify Helium of ad events.
      *
@@ -354,7 +376,7 @@ class MintegralAdapter : PartnerAdapter {
      */
     private suspend fun loadBannerAd(
         context: Context,
-        request: AdLoadRequest,
+        request: PartnerAdLoadRequest,
         partnerUnitId: String,
         listener: PartnerAdListener
     ): Result<PartnerAd> {
@@ -371,14 +393,15 @@ class MintegralAdapter : PartnerAdapter {
             ad.init(size, request.partnerPlacement, partnerUnitId)
             ad.setBannerAdListener(object : BannerAdListener {
                 override fun onLoadFailed(p0: MBridgeIds?, error: String?) {
-                    LogController.e(
-                        "Mintegral failed to load banner ad for " +
-                                "${request.partnerPlacement}. Error: $error"
+                    PartnerLogController.log(
+                        LOAD_FAILED,
+                        "Placement: ${request.partnerPlacement}. Error: $error"
                     )
                     continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
                 }
 
                 override fun onLoadSuccessed(p0: MBridgeIds?) {
+                    PartnerLogController.log(LOAD_SUCCEEDED)
                     continuation.resume(
                         Result.success(
                             PartnerAd(ad = ad, details = emptyMap(), request = request)
@@ -387,12 +410,14 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onLogImpression(p0: MBridgeIds?) {
+                    PartnerLogController.log(DID_TRACK_IMPRESSION)
                     listener.onPartnerAdImpression(
                         PartnerAd(ad = ad, details = emptyMap(), request = request)
                     )
                 }
 
                 override fun onClick(p0: MBridgeIds?) {
+                    PartnerLogController.log(DID_CLICK)
                     listener.onPartnerAdClicked(
                         PartnerAd(ad = ad, details = emptyMap(), request = request)
                     )
@@ -441,7 +466,7 @@ class MintegralAdapter : PartnerAdapter {
      * Attempt to load a Mintegral interstitial ad.
      *
      * @param context The current [Context].
-     * @param request An [AdLoadRequest] instance containing relevant data for the current ad load call.
+     * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param partnerUnitId The Mintegral unit ID for the ad.
      * @param listener A [PartnerAdListener] to notify Helium of ad events.
      *
@@ -449,7 +474,7 @@ class MintegralAdapter : PartnerAdapter {
      */
     private suspend fun loadInterstitialAd(
         context: Context,
-        request: AdLoadRequest,
+        request: PartnerAdLoadRequest,
         partnerUnitId: String,
         listener: PartnerAdListener
     ): Result<PartnerAd> {
@@ -466,7 +491,7 @@ class MintegralAdapter : PartnerAdapter {
      * Attempt to load a bidding Mintegral interstitial ad.
      *
      * @param context The current [Context].
-     * @param request An [AdLoadRequest] instance containing relevant data for the current ad load call.
+     * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param adm The ad markup.
      * @param partnerUnitId The Mintegral unit ID for the ad.
      * @param listener A [PartnerAdListener] to notify Helium of ad events.
@@ -475,7 +500,7 @@ class MintegralAdapter : PartnerAdapter {
      */
     private suspend fun loadBiddingInterstitialAd(
         context: Context,
-        request: AdLoadRequest,
+        request: PartnerAdLoadRequest,
         adm: String,
         partnerUnitId: String,
         listener: PartnerAdListener
@@ -488,15 +513,16 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onVideoLoadSuccess(p0: MBridgeIds?) {
+                    PartnerLogController.log(LOAD_SUCCEEDED)
                     continuation.resume(
                         Result.success(PartnerAd(ad = ad, details = emptyMap(), request = request))
                     )
                 }
 
                 override fun onVideoLoadFail(p0: MBridgeIds?, error: String?) {
-                    LogController.e(
-                        "Mintegral failed to load bidding interstitial ad for " +
-                                "${request.partnerPlacement}. Error: $error"
+                    PartnerLogController.log(
+                        LOAD_FAILED,
+                        "Placement: ${request.partnerPlacement}. Error: $error"
                     )
                     continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
                 }
@@ -506,6 +532,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onAdClose(p0: MBridgeIds?, p1: RewardInfo?) {
+                    PartnerLogController.log(DID_DISMISS)
                     listener.onPartnerAdDismissed(
                         PartnerAd(ad = ad, details = emptyMap(), request = request), null
                     )
@@ -516,6 +543,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onVideoAdClicked(p0: MBridgeIds?) {
+                    PartnerLogController.log(DID_CLICK)
                     listener.onPartnerAdClicked(
                         PartnerAd(ad = ad, details = emptyMap(), request = request)
                     )
@@ -539,7 +567,7 @@ class MintegralAdapter : PartnerAdapter {
      * Attempt to load a non-bidding Mintegral interstitial ad.
      *
      * @param context The current [Context].
-     * @param request An [AdLoadRequest] instance containing relevant data for the current ad load call.
+     * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param partnerUnitId The Mintegral unit ID for the ad.
      * @param listener A [PartnerAdListener] to notify Helium of ad events.
      *
@@ -547,7 +575,7 @@ class MintegralAdapter : PartnerAdapter {
      */
     private suspend fun loadNonBiddingInterstitialAd(
         context: Context,
-        request: AdLoadRequest,
+        request: PartnerAdLoadRequest,
         partnerUnitId: String,
         listener: PartnerAdListener
     ): Result<PartnerAd> {
@@ -559,15 +587,16 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onVideoLoadSuccess(p0: MBridgeIds?) {
+                    PartnerLogController.log(LOAD_SUCCEEDED)
                     continuation.resume(
                         Result.success(PartnerAd(ad = ad, details = emptyMap(), request = request))
                     )
                 }
 
                 override fun onVideoLoadFail(p0: MBridgeIds?, error: String?) {
-                    LogController.e(
-                        "Mintegral failed to load bidding interstitial ad for " +
-                                "${request.partnerPlacement}. Error: $error"
+                    PartnerLogController.log(
+                        LOAD_FAILED,
+                        "Placement: ${request.partnerPlacement}. Error: $error"
                     )
                     continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
                 }
@@ -577,6 +606,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onAdClose(p0: MBridgeIds?, p1: RewardInfo?) {
+                    PartnerLogController.log(DID_DISMISS)
                     listener.onPartnerAdDismissed(
                         PartnerAd(ad = ad, details = emptyMap(), request = request), null
                     )
@@ -587,6 +617,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onVideoAdClicked(p0: MBridgeIds?) {
+                    PartnerLogController.log(DID_CLICK)
                     listener.onPartnerAdClicked(
                         PartnerAd(ad = ad, details = emptyMap(), request = request)
                     )
@@ -610,7 +641,7 @@ class MintegralAdapter : PartnerAdapter {
      * Attempt to load a Mintegral rewarded ad.
      *
      * @param context The current [Context].
-     * @param request An [AdLoadRequest] instance containing relevant data for the current ad load call.
+     * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param partnerUnitId The Mintegral unit ID for the ad.
      * @param listener A [PartnerAdListener] to notify Helium of ad events.
      *
@@ -618,7 +649,7 @@ class MintegralAdapter : PartnerAdapter {
      */
     private suspend fun loadRewardedAd(
         context: Context,
-        request: AdLoadRequest,
+        request: PartnerAdLoadRequest,
         partnerUnitId: String,
         listener: PartnerAdListener
     ): Result<PartnerAd> {
@@ -635,7 +666,7 @@ class MintegralAdapter : PartnerAdapter {
      * Attempt to load a bidding Mintegral rewarded ad.
      *
      * @param context The current [Context].
-     * @param request An [AdLoadRequest] instance containing relevant data for the current ad load call.
+     * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param adm The ad markup.
      * @param partnerUnitId The Mintegral unit ID for the ad.
      * @param listener A [PartnerAdListener] to notify Helium of ad events.
@@ -644,7 +675,7 @@ class MintegralAdapter : PartnerAdapter {
      */
     private suspend fun loadBiddingRewardedAd(
         context: Context,
-        request: AdLoadRequest,
+        request: PartnerAdLoadRequest,
         adm: String,
         partnerUnitId: String,
         listener: PartnerAdListener
@@ -654,6 +685,7 @@ class MintegralAdapter : PartnerAdapter {
             ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
             ad.setRewardVideoListener(object : RewardVideoListener {
                 override fun onVideoLoadSuccess(p0: MBridgeIds?) {
+                    PartnerLogController.log(LOAD_SUCCEEDED)
                     continuation.resume(
                         Result.success(PartnerAd(ad = ad, details = emptyMap(), request = request))
                     )
@@ -663,7 +695,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onVideoLoadFail(p0: MBridgeIds?, error: String?) {
-                    LogController.e("Mintegral failed to load bidding rewarded ad with error $error")
+                    PartnerLogController.log(LOAD_FAILED, "$error")
                     continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
                 }
 
@@ -672,6 +704,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onAdClose(p0: MBridgeIds?, rewardInfo: RewardInfo?) {
+                    PartnerLogController.log(DID_REWARD)
                     listener.onPartnerAdRewarded(
                         PartnerAd(ad = ad, details = emptyMap(), request = request), Reward(
                             rewardInfo?.rewardAmount?.toInt() ?: 0,
@@ -685,6 +718,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onVideoAdClicked(p0: MBridgeIds?) {
+                    PartnerLogController.log(DID_CLICK)
                     listener.onPartnerAdClicked(
                         PartnerAd(ad = ad, details = emptyMap(), request = request)
                     )
@@ -705,7 +739,7 @@ class MintegralAdapter : PartnerAdapter {
      * Attempt to load a non-bidding Mintegral rewarded ad.
      *
      * @param context The current [Context].
-     * @param request An [AdLoadRequest] instance containing relevant data for the current ad load call.
+     * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param partnerUnitId The Mintegral unit ID for the ad.
      * @param listener A [PartnerAdListener] to notify Helium of ad events.
      *
@@ -713,7 +747,7 @@ class MintegralAdapter : PartnerAdapter {
      */
     private suspend fun loadNonBiddingRewardedAd(
         context: Context,
-        request: AdLoadRequest,
+        request: PartnerAdLoadRequest,
         partnerUnitId: String,
         listener: PartnerAdListener
     ): Result<PartnerAd> {
@@ -722,6 +756,7 @@ class MintegralAdapter : PartnerAdapter {
             ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
             ad.setRewardVideoListener(object : RewardVideoListener {
                 override fun onVideoLoadSuccess(p0: MBridgeIds?) {
+                    PartnerLogController.log(LOAD_SUCCEEDED)
                     continuation.resume(
                         Result.success(PartnerAd(ad = ad, details = emptyMap(), request = request))
                     )
@@ -731,7 +766,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onVideoLoadFail(p0: MBridgeIds?, error: String?) {
-                    LogController.e("Mintegral failed to load bidding rewarded ad with error $error")
+                    PartnerLogController.log(LOAD_FAILED, "$error")
                     continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
                 }
 
@@ -740,6 +775,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onAdClose(p0: MBridgeIds?, rewardInfo: RewardInfo?) {
+                    PartnerLogController.log(DID_REWARD)
                     listener.onPartnerAdRewarded(
                         PartnerAd(ad = ad, details = emptyMap(), request = request), Reward(
                             rewardInfo?.rewardAmount?.toInt() ?: 0,
@@ -753,6 +789,7 @@ class MintegralAdapter : PartnerAdapter {
                 }
 
                 override fun onVideoAdClicked(p0: MBridgeIds?) {
+                    PartnerLogController.log(DID_CLICK)
                     listener.onPartnerAdClicked(
                         PartnerAd(ad = ad, details = emptyMap(), request = request)
                     )
