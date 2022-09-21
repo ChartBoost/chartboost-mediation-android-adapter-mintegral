@@ -115,8 +115,8 @@ class MintegralAdapter : PartnerAdapter {
     ): Result<Unit> {
         PartnerLogController.log(SETUP_STARTED)
 
-        val appId = partnerConfiguration.credentials.optString(APP_ID_KEY)
-        val appKey = partnerConfiguration.credentials.optString(APP_KEY_KEY)
+        val appId = partnerConfiguration.credentials.optString(APP_ID_KEY).trim()
+        val appKey = partnerConfiguration.credentials.optString(APP_KEY_KEY).trim()
 
         if (!canInitialize(appId, appKey)) {
             return Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED))
