@@ -7,8 +7,6 @@ import android.widget.FrameLayout
 import com.chartboost.heliumsdk.domain.*
 import com.chartboost.heliumsdk.utils.PartnerLogController
 import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.*
-import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterFailureEvents.*
-import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterSuccessEvents.*
 import com.mbridge.msdk.MBridgeConstans
 import com.mbridge.msdk.interstitialvideo.out.InterstitialVideoListener
 import com.mbridge.msdk.interstitialvideo.out.MBBidInterstitialVideoHandler
@@ -156,6 +154,7 @@ class MintegralAdapter : PartnerAdapter {
      * @param gdprApplies True if GDPR applies, false otherwise.
      */
     override fun setGdprApplies(context: Context, gdprApplies: Boolean) {
+        PartnerLogController.log(if (gdprApplies) GDPR_APPLICABLE else GDPR_NOT_APPLICABLE)
         this.gdprApplies = gdprApplies
     }
 
@@ -166,6 +165,14 @@ class MintegralAdapter : PartnerAdapter {
      * @param gdprConsentStatus The user's current GDPR consent status.
      */
     override fun setGdprConsentStatus(context: Context, gdprConsentStatus: GdprConsentStatus) {
+        PartnerLogController.log(
+            when (gdprConsentStatus) {
+                GdprConsentStatus.GDPR_CONSENT_UNKNOWN -> GDPR_CONSENT_UNKNOWN
+                GdprConsentStatus.GDPR_CONSENT_GRANTED -> GDPR_CONSENT_GRANTED
+                GdprConsentStatus.GDPR_CONSENT_DENIED -> GDPR_CONSENT_DENIED
+            }
+        )
+
         if (gdprApplies && isSdkInitialized) {
             MBridgeSDKFactory.getMBridgeSDK()?.setConsentStatus(
                 context,
@@ -181,16 +188,21 @@ class MintegralAdapter : PartnerAdapter {
      * Notify Mintegral of the user's CCPA consent status, if applicable.
      *
      * @param context The current [Context].
-     * @param hasGivenCcpaConsent True if the user has given CCPA consent, false otherwise.
+     * @param hasGrantedCcpaConsent True if the user has granted CCPA consent, false otherwise.
      * @param privacyString The CCPA privacy string.
      */
     override fun setCcpaConsent(
         context: Context,
-        hasGivenCcpaConsent: Boolean,
+        hasGrantedCcpaConsent: Boolean,
         privacyString: String?
     ) {
+        PartnerLogController.log(
+            if (hasGrantedCcpaConsent) CCPA_CONSENT_GRANTED
+            else CCPA_CONSENT_DENIED
+        )
+
         if (isSdkInitialized) MBridgeSDKFactory.getMBridgeSDK()
-            ?.setDoNotTrackStatus(!hasGivenCcpaConsent)
+            ?.setDoNotTrackStatus(!hasGrantedCcpaConsent)
     }
 
     /**
@@ -200,6 +212,11 @@ class MintegralAdapter : PartnerAdapter {
      * @param isSubjectToCoppa True if the user is subject to COPPA, false otherwise.
      */
     override fun setUserSubjectToCoppa(context: Context, isSubjectToCoppa: Boolean) {
+        PartnerLogController.log(
+            if (isSubjectToCoppa) COPPA_SUBJECT
+            else COPPA_NOT_SUBJECT
+        )
+
         if (isSdkInitialized) MBridgeSDKFactory.getMBridgeSDK()
             ?.setDoNotTrackStatus(isSubjectToCoppa)
     }
