@@ -86,14 +86,8 @@ dependencies {
     implementation "com.mbridge.msdk.oversea:mbbanner:16.0.31"
     implementation "com.mbridge.msdk.oversea:mbbid:16.0.31"
 
-    implementation 'org.greenrobot:eventbus:3.3.1'
+    // Adapter Dependencies
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.6.10"
-    implementation 'androidx.appcompat:appcompat:1.4.2'
-    implementation 'androidx.navigation:navigation-ui-ktx:2.4.2'
-    implementation 'com.google.android.material:material:1.4.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.navigation:navigation-fragment-ktx:2.4.2'
 }
 
 artifactory {
