@@ -27,7 +27,7 @@ android {
     defaultConfig {
         minSdk = 21
         targetSdk = 33
-        // If you touch the following line, don"t forget to update scripts/get_rc_version.zsh
+        // If you touch the following line, don't forget to update scripts/get_rc_version.zsh
         android.defaultConfig.versionName = System.getenv("VERSION_OVERRIDE") ?: "4.16.0.31.0"
         buildConfigField("String", "HELIUM_MINTEGRAL_ADAPTER_VERSION", "\"${android.defaultConfig.versionName}\"")
 
@@ -60,7 +60,7 @@ dependencies {
 
     // For external usage, please use the following production dependency.
     // You may choose a different release version.
-    // TODO: Change this to 4.+ when it"s released
+    // TODO: Change this to 4.+ when it's released
     "remoteImplementation"("com.chartboost:helium:+")
 
     // Partner SDK
