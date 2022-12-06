@@ -7,6 +7,6 @@ pluginManagement {
 }
 
 rootProject.name = "MintegralAdapter"
-include ':MintegralAdapter'
-include ':android-helium-sdk'
-include ':Helium'
+include(":MintegralAdapter")
+include(":android-helium-sdk")
+include(":Helium")
