@@ -117,7 +117,7 @@ class MintegralAdapter : PartnerAdapter {
         val appKey = partnerConfiguration.credentials.optString(APP_KEY_KEY).trim()
 
         if (!canInitialize(appId, appKey)) {
-            return Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED))
+            return Result.failure(HeliumAdException(HeliumError.HE_INITIALIZATION_FAILURE_INVALID_CREDENTIALS))
         }
 
         return suspendCoroutine { continuation ->
@@ -139,7 +139,7 @@ class MintegralAdapter : PartnerAdapter {
 
                         override fun onInitFail(error: String?) {
                             PartnerLogController.log(SETUP_FAILED, "$error")
-                            continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
+                            continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_INITIALIZATION_FAILURE_UNKNOWN)))
                         }
                     }
                 )
@@ -257,7 +257,7 @@ class MintegralAdapter : PartnerAdapter {
         val unitId = request.partnerSettings[UNIT_ID_KEY] ?: ""
 
         if (!canLoadAd(context, request.partnerPlacement, unitId)) {
-            return Result.failure(HeliumAdException(HeliumErrorCode.INVALID_BID_PAYLOAD))
+            return Result.failure(HeliumAdException(HeliumError.HE_LOAD_FAILURE_INVALID_PARTNER_PLACEMENT))
         }
 
         return when (request.format) {
@@ -295,12 +295,12 @@ class MintegralAdapter : PartnerAdapter {
 
                 onShowFailure = {
                     PartnerLogController.log(SHOW_FAILED)
-                    continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL)))
+                    continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_SHOW_FAILURE_UNKNOWN)))
                 }
             }
         } ?: run {
             PartnerLogController.log(SHOW_FAILED, "Ad is null.")
-            Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
+            Result.failure(HeliumAdException(HeliumError.HE_SHOW_FAILURE_AD_NOT_FOUND))
         }
     }
 
@@ -324,7 +324,7 @@ class MintegralAdapter : PartnerAdapter {
             Result.success(partnerAd)
         } ?: run {
             PartnerLogController.log(INVALIDATE_FAILED, "Ad is null.")
-            Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
+            Result.failure(HeliumAdException(HeliumError.HE_INVALIDATE_FAILURE_AD_NOT_FOUND))
         }
     }
 
@@ -414,7 +414,7 @@ class MintegralAdapter : PartnerAdapter {
                         LOAD_FAILED,
                         "Placement: ${request.partnerPlacement}. Error: $error"
                     )
-                    continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
+                    continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onLoadSuccessed(p0: MBridgeIds?) {
@@ -541,7 +541,7 @@ class MintegralAdapter : PartnerAdapter {
                         LOAD_FAILED,
                         "Placement: ${request.partnerPlacement}. Error: $error"
                     )
-                    continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
+                    continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onAdShow(p0: MBridgeIds?) {
@@ -615,7 +615,7 @@ class MintegralAdapter : PartnerAdapter {
                         LOAD_FAILED,
                         "Placement: ${request.partnerPlacement}. Error: $error"
                     )
-                    continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
+                    continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onAdShow(p0: MBridgeIds?) {
@@ -713,7 +713,7 @@ class MintegralAdapter : PartnerAdapter {
 
                 override fun onVideoLoadFail(p0: MBridgeIds?, error: String?) {
                     PartnerLogController.log(LOAD_FAILED, "$error")
-                    continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
+                    continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onAdShow(p0: MBridgeIds?) {
@@ -784,7 +784,7 @@ class MintegralAdapter : PartnerAdapter {
 
                 override fun onVideoLoadFail(p0: MBridgeIds?, error: String?) {
                     PartnerLogController.log(LOAD_FAILED, "$error")
-                    continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
+                    continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onAdShow(p0: MBridgeIds?) {
