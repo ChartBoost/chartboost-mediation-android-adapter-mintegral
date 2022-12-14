@@ -720,10 +720,7 @@ class MintegralAdapter : PartnerAdapter {
                 override fun onAdClose(p0: MBridgeIds?, rewardInfo: RewardInfo?) {
                     PartnerLogController.log(DID_REWARD)
                     listener.onPartnerAdRewarded(
-                        PartnerAd(ad = ad, details = emptyMap(), request = request), Reward(
-                            rewardInfo?.rewardAmount?.toInt() ?: 0,
-                            rewardInfo?.rewardName ?: ""
-                        )
+                        PartnerAd(ad = ad, details = emptyMap(), request = request)
                     )
                 }
 
@@ -791,10 +788,7 @@ class MintegralAdapter : PartnerAdapter {
                 override fun onAdClose(p0: MBridgeIds?, rewardInfo: RewardInfo?) {
                     PartnerLogController.log(DID_REWARD)
                     listener.onPartnerAdRewarded(
-                        PartnerAd(ad = ad, details = emptyMap(), request = request), Reward(
-                            rewardInfo?.rewardAmount?.toInt() ?: 0,
-                            rewardInfo?.rewardName ?: ""
-                        )
+                        PartnerAd(ad = ad, details = emptyMap(), request = request)
                     )
                 }
 
