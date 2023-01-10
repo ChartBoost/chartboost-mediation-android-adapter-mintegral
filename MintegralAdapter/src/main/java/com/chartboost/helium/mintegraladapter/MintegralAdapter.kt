@@ -236,8 +236,11 @@ class MintegralAdapter : PartnerAdapter {
         request: PreBidRequest
     ): Map<String, String> {
         PartnerLogController.log(BIDDER_INFO_FETCH_STARTED)
-        PartnerLogController.log(BIDDER_INFO_FETCH_SUCCEEDED)
-        return mapOf<String, String>("buyeruid" to BidManager.getBuyerUid(context))
+
+        val token = BidManager.getBuyerUid(context) ?: ""
+
+        PartnerLogController.log(if (token.isNotEmpty()) BIDDER_INFO_FETCH_SUCCEEDED else BIDDER_INFO_FETCH_FAILED)
+        return mapOf("buyeruid" to token)
     }
 
     /**
