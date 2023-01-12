@@ -46,11 +46,6 @@ class MintegralAdapter : PartnerAdapter {
          * Key for parsing the Mintegral app key
          */
         private const val APP_KEY_KEY = "app_key"
-
-        /**
-         * Key for parsing the Mintegral unity ID
-         */
-        private const val UNIT_ID_KEY = "mintegral_unit_id"
     }
 
     /**
@@ -259,7 +254,9 @@ class MintegralAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         PartnerLogController.log(LOAD_STARTED)
 
-        val unitId = request.partnerSettings[UNIT_ID_KEY] ?: ""
+        // Programmatic and non-programmatic bid responses for Mintegral currently employ two different
+        // key names for the Mintegral unit ID.
+        val unitId = request.partnerSettings["mintegral_unit_id"] ?: request.partnerSettings["unit_id"] ?: ""
 
         if (!canLoadAd(context, request.partnerPlacement, unitId)) {
             return Result.failure(HeliumAdException(HeliumError.HE_LOAD_FAILURE_INVALID_PARTNER_PLACEMENT))
