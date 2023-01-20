@@ -14,6 +14,9 @@ import com.mbridge.msdk.interstitialvideo.out.MBInterstitialVideoHandler
 import com.mbridge.msdk.mbbid.out.BidManager
 import com.mbridge.msdk.out.*
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -108,8 +111,12 @@ class MintegralAdapter : PartnerAdapter {
     ): Result<Unit> {
         PartnerLogController.log(SETUP_STARTED)
 
-        val appId = partnerConfiguration.credentials.optString(APP_ID_KEY).trim()
-        val appKey = partnerConfiguration.credentials.optString(APP_KEY_KEY).trim()
+        val appId = Json.decodeFromJsonElement<String>(
+            (partnerConfiguration.credentials as JsonObject).getValue(APP_ID_KEY)
+        ).trim()
+        val appKey = Json.decodeFromJsonElement<String>(
+            (partnerConfiguration.credentials as JsonObject).getValue(APP_KEY_KEY)
+        ).trim()
 
         if (!canInitialize(appId, appKey)) {
             return Result.failure(HeliumAdException(HeliumError.HE_INITIALIZATION_FAILURE_INVALID_CREDENTIALS))
