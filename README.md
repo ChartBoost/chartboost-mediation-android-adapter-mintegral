@@ -1,19 +1,19 @@
 # Chartboost Mediation Mintegral Adapter
 
-The Chartboost Mediation Mintegral adapter mediates the Mintegral SDK into the Chartboost Mediation SDK.
+The Chartboost Mediation Mintegral adapter mediates Mintegral via the Chartboost Mediation SDK.
 
 ## Minimum Requirements
 
-| Plugin | Version |
-| ------ | ------ |
-| Chartboost Mediation SDK | 4.0.0+ |
-| Android API | 21+ |
+| Plugin                   | Version |
+| ------------------------ | ------- |
+| Chartboost Mediation SDK | 4.0.0+  |
+| Android API              | 21+     |
 
 ## Integration
 
 In your `build.gradle`, add the following entry:
 ```
-    implementation "com.chartboost:mediation-adapter-mintegral:4.16.0.31.0"
+    implementation "com.chartboost:chartboost-mediation-adapter-mintegral:4.16.0.31.0"
 ```
 
 ## Contributions
