@@ -5,7 +5,7 @@
  * license that can be found in the LICENSE file.
  */
 
-package com.chartboost.helium.mintegraladapter
+package com.chartboost.mediation.mintegraladapter
 
 import android.app.Activity
 import android.content.Context
@@ -28,7 +28,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 /**
- * The Helium Mintegral Adapter.
+ * The Chartboost Mediation Mintegral Adapter.
  */
 class MintegralAdapter : PartnerAdapter {
     companion object {
@@ -83,16 +83,16 @@ class MintegralAdapter : PartnerAdapter {
      * Get the Mintegral adapter version.
      *
      * You may version the adapter using any preferred convention, but it is recommended to apply the
-     * following format if the adapter will be published by Helium:
+     * following format if the adapter will be published by Chartboost Mediation:
      *
-     * Helium.Partner.Adapter
+     * Chartboost Mediation.Partner.Adapter
      *
-     * "Helium" represents the Helium SDK’s major version that is compatible with this adapter. This must be 1 digit.
+     * "Chartboost Mediation" represents the Chartboost Mediation SDK’s major version that is compatible with this adapter. This must be 1 digit.
      * "Partner" represents the partner SDK’s major.minor.patch.x (where x is optional) version that is compatible with this adapter. This can be 3-4 digits.
      * "Adapter" represents this adapter’s version (starting with 0), which resets to 0 when the partner SDK’s version changes. This must be 1 digit.
      */
     override val adapterVersion: String
-        get() = BuildConfig.HELIUM_MINTEGRAL_ADAPTER_VERSION
+        get() = BuildConfig.CHARTBOOST_MEDIATION_MINTEGRAL_ADAPTER_VERSION
 
     /**
      * Get the partner name for internal uses.
@@ -126,7 +126,7 @@ class MintegralAdapter : PartnerAdapter {
         ).trim()
 
         if (!canInitialize(appId, appKey)) {
-            return Result.failure(HeliumAdException(HeliumError.HE_INITIALIZATION_FAILURE_INVALID_CREDENTIALS))
+            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS))
         }
 
         return suspendCoroutine { continuation ->
@@ -148,7 +148,7 @@ class MintegralAdapter : PartnerAdapter {
 
                         override fun onInitFail(error: String?) {
                             PartnerLogController.log(SETUP_FAILED, "$error")
-                            continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_INITIALIZATION_FAILURE_UNKNOWN)))
+                            continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN)))
                         }
                     }
                 )
@@ -257,7 +257,7 @@ class MintegralAdapter : PartnerAdapter {
      *
      * @param context The current [Context].
      * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
-     * @param partnerAdListener A [PartnerAdListener] to notify Helium of ad events.
+     * @param partnerAdListener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
@@ -273,7 +273,7 @@ class MintegralAdapter : PartnerAdapter {
         val unitId = request.partnerSettings["mintegral_unit_id"] ?: request.partnerSettings["unit_id"] ?: ""
 
         if (!canLoadAd(context, request.partnerPlacement, unitId)) {
-            return Result.failure(HeliumAdException(HeliumError.HE_LOAD_FAILURE_INVALID_PARTNER_PLACEMENT))
+            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_INVALID_PARTNER_PLACEMENT))
         }
 
         return when (request.format) {
@@ -311,12 +311,12 @@ class MintegralAdapter : PartnerAdapter {
 
                 onShowFailure = {
                     PartnerLogController.log(SHOW_FAILED)
-                    continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_SHOW_FAILURE_UNKNOWN)))
+                    continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_UNKNOWN)))
                 }
             }
         } ?: run {
             PartnerLogController.log(SHOW_FAILED, "Ad is null.")
-            Result.failure(HeliumAdException(HeliumError.HE_SHOW_FAILURE_AD_NOT_FOUND))
+            Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_AD_NOT_FOUND))
         }
     }
 
@@ -340,7 +340,7 @@ class MintegralAdapter : PartnerAdapter {
             Result.success(partnerAd)
         } ?: run {
             PartnerLogController.log(INVALIDATE_FAILED, "Ad is null.")
-            Result.failure(HeliumAdException(HeliumError.HE_INVALIDATE_FAILURE_AD_NOT_FOUND))
+            Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INVALIDATE_FAILURE_AD_NOT_FOUND))
         }
     }
 
@@ -403,7 +403,7 @@ class MintegralAdapter : PartnerAdapter {
      * @param context The current [Context].
      * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param partnerUnitId The Mintegral unit ID for the ad.
-     * @param listener A [PartnerAdListener] to notify Helium of ad events.
+     * @param listener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
@@ -430,7 +430,7 @@ class MintegralAdapter : PartnerAdapter {
                         LOAD_FAILED,
                         "Placement: ${request.partnerPlacement}. Error: $error"
                     )
-                    continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_LOAD_FAILURE_UNKNOWN)))
+                    continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onLoadSuccessed(p0: MBridgeIds?) {
@@ -478,9 +478,9 @@ class MintegralAdapter : PartnerAdapter {
     }
 
     /**
-     * Convert a Helium banner size into the corresponding Mintegral banner size.
+     * Convert a Chartboost Mediation banner size into the corresponding Mintegral banner size.
      *
-     * @param size The Helium banner size.
+     * @param size The Chartboost Mediation banner size.
      *
      * @return The Mintegral banner size.
      */
@@ -501,7 +501,7 @@ class MintegralAdapter : PartnerAdapter {
      * @param context The current [Context].
      * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param partnerUnitId The Mintegral unit ID for the ad.
-     * @param listener A [PartnerAdListener] to notify Helium of ad events.
+     * @param listener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
@@ -527,7 +527,7 @@ class MintegralAdapter : PartnerAdapter {
      * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param adm The ad markup.
      * @param partnerUnitId The Mintegral unit ID for the ad.
-     * @param listener A [PartnerAdListener] to notify Helium of ad events.
+     * @param listener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
@@ -557,7 +557,7 @@ class MintegralAdapter : PartnerAdapter {
                         LOAD_FAILED,
                         "Placement: ${request.partnerPlacement}. Error: $error"
                     )
-                    continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_LOAD_FAILURE_UNKNOWN)))
+                    continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onAdShow(p0: MBridgeIds?) {
@@ -602,7 +602,7 @@ class MintegralAdapter : PartnerAdapter {
      * @param context The current [Context].
      * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param partnerUnitId The Mintegral unit ID for the ad.
-     * @param listener A [PartnerAdListener] to notify Helium of ad events.
+     * @param listener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
@@ -631,7 +631,7 @@ class MintegralAdapter : PartnerAdapter {
                         LOAD_FAILED,
                         "Placement: ${request.partnerPlacement}. Error: $error"
                     )
-                    continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_LOAD_FAILURE_UNKNOWN)))
+                    continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onAdShow(p0: MBridgeIds?) {
@@ -676,7 +676,7 @@ class MintegralAdapter : PartnerAdapter {
      * @param context The current [Context].
      * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param partnerUnitId The Mintegral unit ID for the ad.
-     * @param listener A [PartnerAdListener] to notify Helium of ad events.
+     * @param listener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
@@ -702,7 +702,7 @@ class MintegralAdapter : PartnerAdapter {
      * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param adm The ad markup.
      * @param partnerUnitId The Mintegral unit ID for the ad.
-     * @param listener A [PartnerAdListener] to notify Helium of ad events.
+     * @param listener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
@@ -729,7 +729,7 @@ class MintegralAdapter : PartnerAdapter {
 
                 override fun onVideoLoadFail(p0: MBridgeIds?, error: String?) {
                     PartnerLogController.log(LOAD_FAILED, "$error")
-                    continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_LOAD_FAILURE_UNKNOWN)))
+                    continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onAdShow(p0: MBridgeIds?) {
@@ -771,7 +771,7 @@ class MintegralAdapter : PartnerAdapter {
      * @param context The current [Context].
      * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param partnerUnitId The Mintegral unit ID for the ad.
-     * @param listener A [PartnerAdListener] to notify Helium of ad events.
+     * @param listener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
@@ -797,7 +797,7 @@ class MintegralAdapter : PartnerAdapter {
 
                 override fun onVideoLoadFail(p0: MBridgeIds?, error: String?) {
                     PartnerLogController.log(LOAD_FAILED, "$error")
-                    continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_LOAD_FAILURE_UNKNOWN)))
+                    continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onAdShow(p0: MBridgeIds?) {
