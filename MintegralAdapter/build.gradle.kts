@@ -36,7 +36,7 @@ android {
         minSdk = 21
         targetSdk = 33
         // If you touch the following line, don't forget to update scripts/get_rc_version.zsh
-        android.defaultConfig.versionName = System.getenv("VERSION_OVERRIDE") ?: "4.16.0.31.0"
+        android.defaultConfig.versionName = System.getenv("VERSION_OVERRIDE") ?: "4.16.2.61.0"
         buildConfigField("String", "CHARTBOOST_MEDIATION_MINTEGRAL_ADAPTER_VERSION", "\"${android.defaultConfig.versionName}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -71,20 +71,21 @@ dependencies {
     "remoteImplementation"("com.chartboost:chartboost-mediation-sdk:4.+")
 
     // Partner SDK
-    implementation("com.mbridge.msdk.oversea:videojs:16.0.31")
-    implementation("com.mbridge.msdk.oversea:mbjscommon:16.0.31")
-    implementation("com.mbridge.msdk.oversea:playercommon:16.0.31")
-    implementation("com.mbridge.msdk.oversea:reward:16.0.31")
-    implementation("com.mbridge.msdk.oversea:videocommon:16.0.31")
-    implementation("com.mbridge.msdk.oversea:same:16.0.31")
-    implementation("com.mbridge.msdk.oversea:interstitialvideo:16.0.31")
-    implementation("com.mbridge.msdk.oversea:mbnative:16.0.31")
-    implementation("com.mbridge.msdk.oversea:nativeex:16.0.31")
-    implementation("com.mbridge.msdk.oversea:mbbanner:16.0.31")
-    implementation("com.mbridge.msdk.oversea:mbbid:16.0.31")
+    val mintegralVersion = "16.2.61"
+    implementation("com.mbridge.msdk.oversea:videojs:$mintegralVersion")
+    implementation("com.mbridge.msdk.oversea:mbjscommon:$mintegralVersion")
+    implementation("com.mbridge.msdk.oversea:playercommon:$mintegralVersion")
+    implementation("com.mbridge.msdk.oversea:reward:$mintegralVersion")
+    implementation("com.mbridge.msdk.oversea:videocommon:$mintegralVersion")
+    implementation("com.mbridge.msdk.oversea:same:$mintegralVersion")
+    implementation("com.mbridge.msdk.oversea:interstitialvideo:$mintegralVersion")
+    implementation("com.mbridge.msdk.oversea:mbnative:$mintegralVersion")
+    implementation("com.mbridge.msdk.oversea:nativeex:$mintegralVersion")
+    implementation("com.mbridge.msdk.oversea:mbbanner:$mintegralVersion")
+    implementation("com.mbridge.msdk.oversea:mbbid:$mintegralVersion")
 
     // Adapter Dependencies
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1")
 }
 
