@@ -36,7 +36,7 @@ android {
         minSdk = 21
         targetSdk = 33
         // If you touch the following line, don't forget to update scripts/get_rc_version.zsh
-        android.defaultConfig.versionName = System.getenv("VERSION_OVERRIDE") ?: "4.16.2.61.0"
+        android.defaultConfig.versionName = System.getenv("VERSION_OVERRIDE") ?: "4.16.3.91.0"
         buildConfigField("String", "CHARTBOOST_MEDIATION_MINTEGRAL_ADAPTER_VERSION", "\"${android.defaultConfig.versionName}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -71,7 +71,7 @@ dependencies {
     "remoteImplementation"("com.chartboost:chartboost-mediation-sdk:4.+")
 
     // Partner SDK
-    val mintegralVersion = "16.2.61"
+    val mintegralVersion = "16.3.91"
     implementation("com.mbridge.msdk.oversea:videojs:$mintegralVersion")
     implementation("com.mbridge.msdk.oversea:mbjscommon:$mintegralVersion")
     implementation("com.mbridge.msdk.oversea:playercommon:$mintegralVersion")
