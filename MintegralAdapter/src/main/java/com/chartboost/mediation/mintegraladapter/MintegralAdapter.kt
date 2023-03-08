@@ -280,7 +280,7 @@ class MintegralAdapter : PartnerAdapter {
             AdFormat.BANNER -> loadBannerAd(context, request, unitId, partnerAdListener)
             AdFormat.INTERSTITIAL -> loadInterstitialAd(context, request, unitId, partnerAdListener)
             AdFormat.REWARDED -> loadRewardedAd(context, request, unitId, partnerAdListener)
-            AdFormat.REWARDED_INTERSTITIAL -> {
+            else -> {
                 PartnerLogController.log(LOAD_FAILED)
                 Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNSUPPORTED_AD_FORMAT))
             }
