@@ -280,6 +280,10 @@ class MintegralAdapter : PartnerAdapter {
             AdFormat.BANNER -> loadBannerAd(context, request, unitId, partnerAdListener)
             AdFormat.INTERSTITIAL -> loadInterstitialAd(context, request, unitId, partnerAdListener)
             AdFormat.REWARDED -> loadRewardedAd(context, request, unitId, partnerAdListener)
+            else -> {
+                PartnerLogController.log(LOAD_FAILED)
+                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNSUPPORTED_AD_FORMAT))
+            }
         }
     }
 
@@ -296,12 +300,19 @@ class MintegralAdapter : PartnerAdapter {
 
         return partnerAd.ad?.let {
             return suspendCancellableCoroutine { continuation ->
+                var failed = false
                 when (it) {
-                    is MBInterstitialVideoHandler -> if (it.isReady) it.show()
-                    is MBBidInterstitialVideoHandler -> if (it.isBidReady) it.showFromBid()
-                    is MBRewardVideoHandler -> if (it.isReady) it.show()
-                    is MBBidRewardVideoHandler -> if (it.isBidReady) it.showFromBid()
+                    is MBInterstitialVideoHandler -> if (it.isReady) it.show() else failed = true
+                    is MBBidInterstitialVideoHandler -> if (it.isBidReady) it.showFromBid() else failed = true
+                    is MBRewardVideoHandler -> if (it.isReady) it.show() else failed = true
+                    is MBBidRewardVideoHandler -> if (it.isBidReady) it.showFromBid() else failed = true
                     is MBBannerView -> continuation.resume(Result.success(partnerAd))
+                }
+
+                if (failed) {
+                    PartnerLogController.log(SHOW_FAILED)
+                    continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_AD_NOT_READY)))
+                    return@suspendCancellableCoroutine
                 }
 
                 onShowSuccess = {
