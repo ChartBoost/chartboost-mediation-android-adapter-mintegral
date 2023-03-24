@@ -307,7 +307,6 @@ class MintegralAdapter : PartnerAdapter {
                     is MBRewardVideoHandler -> if (it.isReady) it.show() else failed = true
                     is MBBidRewardVideoHandler -> if (it.isBidReady) it.showFromBid() else failed = true
                     is MBBannerView -> continuation.resume(Result.success(partnerAd))
-
                 }
 
                 if (failed) {
