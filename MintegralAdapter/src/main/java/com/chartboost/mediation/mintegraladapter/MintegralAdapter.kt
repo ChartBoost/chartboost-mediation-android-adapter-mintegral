@@ -752,6 +752,10 @@ class MintegralAdapter : PartnerAdapter {
                     listener.onPartnerAdRewarded(
                         PartnerAd(ad = ad, details = emptyMap(), request = request)
                     )
+                    PartnerLogController.log(DID_DISMISS)
+                    listener.onPartnerAdDismissed(
+                        PartnerAd(ad = ad, details = emptyMap(), request = request), null
+                    )
                 }
 
                 override fun onShowFail(p0: MBridgeIds?, p1: String?) {
@@ -819,6 +823,10 @@ class MintegralAdapter : PartnerAdapter {
                     PartnerLogController.log(DID_REWARD)
                     listener.onPartnerAdRewarded(
                         PartnerAd(ad = ad, details = emptyMap(), request = request)
+                    )
+                    PartnerLogController.log(DID_DISMISS)
+                    listener.onPartnerAdDismissed(
+                        PartnerAd(ad = ad, details = emptyMap(), request = request), null
                     )
                 }
 
