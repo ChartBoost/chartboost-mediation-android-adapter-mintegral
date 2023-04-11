@@ -3,6 +3,9 @@
 Note the first digit of every adapter version corresponds to the major version of the Chartboost Mediation SDK compatible with that adapter. 
 Adapters are compatible with any Chartboost Mediation SDK version within that major version.
 
+### 4.16.3.91.2
+- Fixed an issue with the close button.
+
 ### 4.16.3.91.1
 - Updated the dependency on Chartboost Mediation SDK to 4.0.0.
 
