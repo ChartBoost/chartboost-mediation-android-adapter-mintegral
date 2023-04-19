@@ -22,10 +22,8 @@ import com.mbridge.msdk.mbbid.out.BidManager
 import com.mbridge.msdk.out.*
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * The Chartboost Mediation Mintegral Adapter.
@@ -119,36 +117,36 @@ class MintegralAdapter : PartnerAdapter {
         PartnerLogController.log(SETUP_STARTED)
 
         val appId = Json.decodeFromJsonElement<String>(
-            (partnerConfiguration.credentials as JsonObject).getValue(APP_ID_KEY)
+            partnerConfiguration.credentials.getValue(APP_ID_KEY)
         ).trim()
         val appKey = Json.decodeFromJsonElement<String>(
-            (partnerConfiguration.credentials as JsonObject).getValue(APP_KEY_KEY)
+            partnerConfiguration.credentials.getValue(APP_KEY_KEY)
         ).trim()
 
         if (!canInitialize(appId, appKey)) {
             return Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS))
         }
 
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             MBridgeSDKFactory.getMBridgeSDK().apply {
                 init(
                     getMBConfigurationMap(appId, appKey),
                     context,
                     object : SDKInitStatusListener {
+                        fun resumeOnce(result: Result<Unit>) {
+                            if (continuation.isActive) {
+                                continuation.resume(result)
+                            }
+                        }
+
                         override fun onInitSuccess() {
                             isSdkInitialized = true
-                            continuation.resume(
-                                Result.success(
-                                    PartnerLogController.log(
-                                        SETUP_SUCCEEDED
-                                    )
-                                )
-                            )
+                            resumeOnce(Result.success(PartnerLogController.log(SETUP_SUCCEEDED)))
                         }
 
                         override fun onInitFail(error: String?) {
                             PartnerLogController.log(SETUP_FAILED, "$error")
-                            continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN)))
+                            resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN)))
                         }
                     }
                 )
@@ -300,29 +298,35 @@ class MintegralAdapter : PartnerAdapter {
 
         return partnerAd.ad?.let {
             return suspendCancellableCoroutine { continuation ->
+                fun resumeOnce(result: Result<PartnerAd>) {
+                    if (continuation.isActive) {
+                        continuation.resume(result)
+                    }
+                }
+
                 var failed = false
                 when (it) {
                     is MBInterstitialVideoHandler -> if (it.isReady) it.show() else failed = true
                     is MBBidInterstitialVideoHandler -> if (it.isBidReady) it.showFromBid() else failed = true
                     is MBRewardVideoHandler -> if (it.isReady) it.show() else failed = true
                     is MBBidRewardVideoHandler -> if (it.isBidReady) it.showFromBid() else failed = true
-                    is MBBannerView -> continuation.resume(Result.success(partnerAd))
+                    is MBBannerView -> resumeOnce(Result.success(partnerAd))
                 }
 
                 if (failed) {
                     PartnerLogController.log(SHOW_FAILED)
-                    continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_AD_NOT_READY)))
+                    resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_AD_NOT_READY)))
                     return@suspendCancellableCoroutine
                 }
 
                 onShowSuccess = {
                     PartnerLogController.log(SHOW_SUCCEEDED)
-                    continuation.resume(Result.success(partnerAd))
+                    resumeOnce(Result.success(partnerAd))
                 }
 
                 onShowFailure = {
                     PartnerLogController.log(SHOW_FAILED)
-                    continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_UNKNOWN)))
+                    resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_UNKNOWN)))
                 }
             }
         } ?: run {
@@ -427,7 +431,7 @@ class MintegralAdapter : PartnerAdapter {
         val adm = request.adm
         val size = getMintegralBannerSize(request.size)
 
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             val ad = MBBannerView(context)
             ad.layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -436,21 +440,23 @@ class MintegralAdapter : PartnerAdapter {
 
             ad.init(size, request.partnerPlacement, partnerUnitId)
             ad.setBannerAdListener(object : BannerAdListener {
+                fun resumeOnce(result: Result<PartnerAd>) {
+                    if (continuation.isActive) {
+                        continuation.resume(result)
+                    }
+                }
+
                 override fun onLoadFailed(p0: MBridgeIds?, error: String?) {
                     PartnerLogController.log(
                         LOAD_FAILED,
                         "Placement: ${request.partnerPlacement}. Error: $error"
                     )
-                    continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
+                    resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onLoadSuccessed(p0: MBridgeIds?) {
                     PartnerLogController.log(LOAD_SUCCEEDED)
-                    continuation.resume(
-                        Result.success(
-                            PartnerAd(ad = ad, details = emptyMap(), request = request)
-                        )
-                    )
+                    resumeOnce(Result.success(PartnerAd(ad = ad, details = emptyMap(), request = request)))
                 }
 
                 override fun onLogImpression(p0: MBridgeIds?) {
@@ -549,18 +555,22 @@ class MintegralAdapter : PartnerAdapter {
         partnerUnitId: String,
         listener: PartnerAdListener
     ): Result<PartnerAd> {
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             val ad = MBBidInterstitialVideoHandler(context, request.partnerPlacement, partnerUnitId)
             ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
             ad.setInterstitialVideoListener(object : InterstitialVideoListener {
+                fun resumeOnce(result: Result<PartnerAd>) {
+                    if (continuation.isActive) {
+                        continuation.resume(result)
+                    }
+                }
+
                 override fun onLoadSuccess(p0: MBridgeIds?) {
                 }
 
                 override fun onVideoLoadSuccess(p0: MBridgeIds?) {
                     PartnerLogController.log(LOAD_SUCCEEDED)
-                    continuation.resume(
-                        Result.success(PartnerAd(ad = ad, details = emptyMap(), request = request))
-                    )
+                    resumeOnce(Result.success(PartnerAd(ad = ad, details = emptyMap(), request = request)))
                 }
 
                 override fun onVideoLoadFail(p0: MBridgeIds?, error: String?) {
@@ -568,7 +578,7 @@ class MintegralAdapter : PartnerAdapter {
                         LOAD_FAILED,
                         "Placement: ${request.partnerPlacement}. Error: $error"
                     )
-                    continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
+                    resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onAdShow(p0: MBridgeIds?) {
@@ -623,18 +633,22 @@ class MintegralAdapter : PartnerAdapter {
         partnerUnitId: String,
         listener: PartnerAdListener
     ): Result<PartnerAd> {
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             val ad = MBInterstitialVideoHandler(context, request.partnerPlacement, partnerUnitId)
             ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
             ad.setInterstitialVideoListener(object : InterstitialVideoListener {
+                fun resumeOnce(result: Result<PartnerAd>) {
+                    if (continuation.isActive) {
+                        continuation.resume(result)
+                    }
+                }
+
                 override fun onLoadSuccess(p0: MBridgeIds?) {
                 }
 
                 override fun onVideoLoadSuccess(p0: MBridgeIds?) {
                     PartnerLogController.log(LOAD_SUCCEEDED)
-                    continuation.resume(
-                        Result.success(PartnerAd(ad = ad, details = emptyMap(), request = request))
-                    )
+                    resumeOnce(Result.success(PartnerAd(ad = ad, details = emptyMap(), request = request)))
                 }
 
                 override fun onVideoLoadFail(p0: MBridgeIds?, error: String?) {
@@ -642,7 +656,7 @@ class MintegralAdapter : PartnerAdapter {
                         LOAD_FAILED,
                         "Placement: ${request.partnerPlacement}. Error: $error"
                     )
-                    continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
+                    resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onAdShow(p0: MBridgeIds?) {
@@ -724,15 +738,19 @@ class MintegralAdapter : PartnerAdapter {
         partnerUnitId: String,
         listener: PartnerAdListener
     ): Result<PartnerAd> {
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             val ad = MBBidRewardVideoHandler(context, request.partnerPlacement, partnerUnitId)
             ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
             ad.setRewardVideoListener(object : RewardVideoListener {
+                fun resumeOnce(result: Result<PartnerAd>) {
+                    if (continuation.isActive) {
+                        continuation.resume(result)
+                    }
+                }
+
                 override fun onVideoLoadSuccess(p0: MBridgeIds?) {
                     PartnerLogController.log(LOAD_SUCCEEDED)
-                    continuation.resume(
-                        Result.success(PartnerAd(ad = ad, details = emptyMap(), request = request))
-                    )
+                    resumeOnce(Result.success(PartnerAd(ad = ad, details = emptyMap(), request = request)))
                 }
 
                 override fun onLoadSuccess(p0: MBridgeIds?) {
@@ -740,7 +758,7 @@ class MintegralAdapter : PartnerAdapter {
 
                 override fun onVideoLoadFail(p0: MBridgeIds?, error: String?) {
                     PartnerLogController.log(LOAD_FAILED, "$error")
-                    continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
+                    resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onAdShow(p0: MBridgeIds?) {
@@ -796,15 +814,19 @@ class MintegralAdapter : PartnerAdapter {
         partnerUnitId: String,
         listener: PartnerAdListener
     ): Result<PartnerAd> {
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             val ad = MBRewardVideoHandler(context, request.partnerPlacement, partnerUnitId)
             ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
             ad.setRewardVideoListener(object : RewardVideoListener {
+                fun resumeOnce(result: Result<PartnerAd>) {
+                    if (continuation.isActive) {
+                        continuation.resume(result)
+                    }
+                }
+
                 override fun onVideoLoadSuccess(p0: MBridgeIds?) {
                     PartnerLogController.log(LOAD_SUCCEEDED)
-                    continuation.resume(
-                        Result.success(PartnerAd(ad = ad, details = emptyMap(), request = request))
-                    )
+                    resumeOnce(Result.success(PartnerAd(ad = ad, details = emptyMap(), request = request)))
                 }
 
                 override fun onLoadSuccess(p0: MBridgeIds?) {
@@ -812,7 +834,7 @@ class MintegralAdapter : PartnerAdapter {
 
                 override fun onVideoLoadFail(p0: MBridgeIds?, error: String?) {
                     PartnerLogController.log(LOAD_FAILED, "$error")
-                    continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
+                    resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onAdShow(p0: MBridgeIds?) {
