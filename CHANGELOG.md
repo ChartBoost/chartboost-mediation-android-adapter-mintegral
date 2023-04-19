@@ -3,6 +3,9 @@
 Note the first digit of every adapter version corresponds to the major version of the Chartboost Mediation SDK compatible with that adapter. 
 Adapters are compatible with any Chartboost Mediation SDK version within that major version.
 
+### 4.16.3.91.3
+- Prevent potential crashes when `continuation` is resumed more than once, often as a result of multiple callback invocations from the Mintegral SDK.
+
 ### 4.16.3.91.2
 - Fixed an issue with the close button.
 
