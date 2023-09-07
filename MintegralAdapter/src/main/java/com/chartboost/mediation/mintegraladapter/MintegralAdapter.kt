@@ -274,10 +274,10 @@ class MintegralAdapter : PartnerAdapter {
             return Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_INVALID_PARTNER_PLACEMENT))
         }
 
-        return when (request.format) {
-            AdFormat.BANNER, AdFormat.ADAPTIVE_BANNER -> loadBannerAd(context, request, unitId, partnerAdListener)
-            AdFormat.INTERSTITIAL -> loadInterstitialAd(context, request, unitId, partnerAdListener)
-            AdFormat.REWARDED -> loadRewardedAd(context, request, unitId, partnerAdListener)
+        return when (request.format.key) {
+            AdFormat.BANNER.key, "adaptive_banner" -> loadBannerAd(context, request, unitId, partnerAdListener)
+            AdFormat.INTERSTITIAL.key -> loadInterstitialAd(context, request, unitId, partnerAdListener)
+            AdFormat.REWARDED.key -> loadRewardedAd(context, request, unitId, partnerAdListener)
             else -> {
                 PartnerLogController.log(LOAD_FAILED)
                 Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNSUPPORTED_AD_FORMAT))
