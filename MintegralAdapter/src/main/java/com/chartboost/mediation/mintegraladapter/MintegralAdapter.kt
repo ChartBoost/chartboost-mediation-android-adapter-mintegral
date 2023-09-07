@@ -275,7 +275,7 @@ class MintegralAdapter : PartnerAdapter {
         }
 
         return when (request.format) {
-            AdFormat.BANNER -> loadBannerAd(context, request, unitId, partnerAdListener)
+            AdFormat.BANNER, AdFormat.ADAPTIVE_BANNER -> loadBannerAd(context, request, unitId, partnerAdListener)
             AdFormat.INTERSTITIAL -> loadInterstitialAd(context, request, unitId, partnerAdListener)
             AdFormat.REWARDED -> loadRewardedAd(context, request, unitId, partnerAdListener)
             else -> {
