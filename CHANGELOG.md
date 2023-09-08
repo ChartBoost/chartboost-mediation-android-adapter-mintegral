@@ -3,6 +3,9 @@
 Note the first digit of every adapter version corresponds to the major version of the Chartboost Mediation SDK compatible with that adapter. 
 Adapters are compatible with any Chartboost Mediation SDK version within that major version.
 
+### 4.16.3.91.5
+- Updated to handle recent AdFormat changes.
+
 ### 4.16.3.91.4
 - Added ProGuard rules.
 
