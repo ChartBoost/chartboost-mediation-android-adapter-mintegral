@@ -14,15 +14,19 @@ import android.widget.FrameLayout
 import com.chartboost.heliumsdk.domain.*
 import com.chartboost.heliumsdk.utils.PartnerLogController
 import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.*
+import com.chartboost.mediation.mintegraladapter.MintegralAdapter.Companion.onShowFailure
+import com.chartboost.mediation.mintegraladapter.MintegralAdapter.Companion.onShowSuccess
 import com.mbridge.msdk.MBridgeConstans
 import com.mbridge.msdk.interstitialvideo.out.InterstitialVideoListener
 import com.mbridge.msdk.interstitialvideo.out.MBBidInterstitialVideoHandler
 import com.mbridge.msdk.interstitialvideo.out.MBInterstitialVideoHandler
 import com.mbridge.msdk.mbbid.out.BidManager
 import com.mbridge.msdk.out.*
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
+import java.lang.ref.WeakReference
 import kotlin.coroutines.resume
 
 /**
@@ -46,6 +50,16 @@ class MintegralAdapter : PartnerAdapter {
             }
 
         /**
+         * Lambda to be called for a successful Mintegral ad show.
+         */
+        internal var onShowSuccess: () -> Unit = {}
+
+        /**
+         * Lambda to be called for a failed Mintegral ad show.
+         */
+        internal var onShowFailure: () -> Unit = {}
+
+        /**
          * Key for parsing the Mintegral app ID
          */
         private const val APP_ID_KEY = "mintegral_app_id"
@@ -55,16 +69,6 @@ class MintegralAdapter : PartnerAdapter {
          */
         private const val APP_KEY_KEY = "app_key"
     }
-
-    /**
-     * Lambda to be called for a successful Mintegral ad show.
-     */
-    private var onShowSuccess: () -> Unit = {}
-
-    /**
-     * Lambda to be called for a failed Mintegral ad show.
-     */
-    private var onShowFailure: () -> Unit = {}
 
     /**
      * Track whether the Mintegral SDK has been successfully initialized.
@@ -319,9 +323,13 @@ class MintegralAdapter : PartnerAdapter {
 
         return partnerAd.ad?.let {
             return suspendCancellableCoroutine { continuation ->
+                val continuationWeakRef = WeakReference(continuation)
+
                 fun resumeOnce(result: Result<PartnerAd>) {
-                    if (continuation.isActive) {
-                        continuation.resume(result)
+                    continuationWeakRef.get()?.let {
+                        if (it.isActive) {
+                            it.resume(result)
+                        }
                     }
                 }
 
@@ -589,73 +597,12 @@ class MintegralAdapter : PartnerAdapter {
             val ad = MBBidInterstitialVideoHandler(context, request.partnerPlacement, partnerUnitId)
             ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
             ad.setInterstitialVideoListener(
-                object : InterstitialVideoListener {
-                    fun resumeOnce(result: Result<PartnerAd>) {
-                        if (continuation.isActive) {
-                            continuation.resume(result)
-                        }
-                    }
-
-                    override fun onLoadSuccess(p0: MBridgeIds?) {
-                    }
-
-                    override fun onVideoLoadSuccess(p0: MBridgeIds?) {
-                        PartnerLogController.log(LOAD_SUCCEEDED)
-                        resumeOnce(Result.success(PartnerAd(ad = ad, details = emptyMap(), request = request)))
-                    }
-
-                    override fun onVideoLoadFail(
-                        p0: MBridgeIds?,
-                        error: String?,
-                    ) {
-                        PartnerLogController.log(
-                            LOAD_FAILED,
-                            "Placement: ${request.partnerPlacement}. Error: $error",
-                        )
-                        resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
-                    }
-
-                    override fun onAdShow(p0: MBridgeIds?) {
-                        onShowSuccess()
-                    }
-
-                    override fun onAdClose(
-                        p0: MBridgeIds?,
-                        p1: RewardInfo?,
-                    ) {
-                        PartnerLogController.log(DID_DISMISS)
-                        listener.onPartnerAdDismissed(
-                            PartnerAd(ad = ad, details = emptyMap(), request = request),
-                            null,
-                        )
-                    }
-
-                    override fun onShowFail(
-                        p0: MBridgeIds?,
-                        p1: String?,
-                    ) {
-                        onShowFailure()
-                    }
-
-                    override fun onVideoAdClicked(p0: MBridgeIds?) {
-                        PartnerLogController.log(DID_CLICK)
-                        listener.onPartnerAdClicked(
-                            PartnerAd(ad = ad, details = emptyMap(), request = request),
-                        )
-                    }
-
-                    override fun onVideoComplete(p0: MBridgeIds?) {
-                    }
-
-                    override fun onAdCloseWithIVReward(
-                        p0: MBridgeIds?,
-                        p1: RewardInfo?,
-                    ) {
-                    }
-
-                    override fun onEndcardShow(p0: MBridgeIds?) {
-                    }
-                },
+                InterstitialAdLoadCallback(
+                    listener,
+                    request,
+                    PartnerAd(ad = ad, details = emptyMap(), request = request),
+                    WeakReference(continuation),
+                ),
             )
 
             ad.loadFromBid(adm)
@@ -682,73 +629,12 @@ class MintegralAdapter : PartnerAdapter {
             val ad = MBInterstitialVideoHandler(context, request.partnerPlacement, partnerUnitId)
             ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
             ad.setInterstitialVideoListener(
-                object : InterstitialVideoListener {
-                    fun resumeOnce(result: Result<PartnerAd>) {
-                        if (continuation.isActive) {
-                            continuation.resume(result)
-                        }
-                    }
-
-                    override fun onLoadSuccess(p0: MBridgeIds?) {
-                    }
-
-                    override fun onVideoLoadSuccess(p0: MBridgeIds?) {
-                        PartnerLogController.log(LOAD_SUCCEEDED)
-                        resumeOnce(Result.success(PartnerAd(ad = ad, details = emptyMap(), request = request)))
-                    }
-
-                    override fun onVideoLoadFail(
-                        p0: MBridgeIds?,
-                        error: String?,
-                    ) {
-                        PartnerLogController.log(
-                            LOAD_FAILED,
-                            "Placement: ${request.partnerPlacement}. Error: $error",
-                        )
-                        resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
-                    }
-
-                    override fun onAdShow(p0: MBridgeIds?) {
-                        onShowSuccess()
-                    }
-
-                    override fun onAdClose(
-                        p0: MBridgeIds?,
-                        p1: RewardInfo?,
-                    ) {
-                        PartnerLogController.log(DID_DISMISS)
-                        listener.onPartnerAdDismissed(
-                            PartnerAd(ad = ad, details = emptyMap(), request = request),
-                            null,
-                        )
-                    }
-
-                    override fun onShowFail(
-                        p0: MBridgeIds?,
-                        p1: String?,
-                    ) {
-                        onShowFailure()
-                    }
-
-                    override fun onVideoAdClicked(p0: MBridgeIds?) {
-                        PartnerLogController.log(DID_CLICK)
-                        listener.onPartnerAdClicked(
-                            PartnerAd(ad = ad, details = emptyMap(), request = request),
-                        )
-                    }
-
-                    override fun onVideoComplete(p0: MBridgeIds?) {
-                    }
-
-                    override fun onAdCloseWithIVReward(
-                        p0: MBridgeIds?,
-                        p1: RewardInfo?,
-                    ) {
-                    }
-
-                    override fun onEndcardShow(p0: MBridgeIds?) {
-                    }
-                },
+                InterstitialAdLoadCallback(
+                    listener,
+                    request,
+                    PartnerAd(ad = ad, details = emptyMap(), request = request),
+                    WeakReference(continuation),
+                ),
             )
 
             ad.load()
@@ -802,68 +688,12 @@ class MintegralAdapter : PartnerAdapter {
             val ad = MBBidRewardVideoHandler(context, request.partnerPlacement, partnerUnitId)
             ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
             ad.setRewardVideoListener(
-                object : RewardVideoListener {
-                    fun resumeOnce(result: Result<PartnerAd>) {
-                        if (continuation.isActive) {
-                            continuation.resume(result)
-                        }
-                    }
-
-                    override fun onVideoLoadSuccess(p0: MBridgeIds?) {
-                        PartnerLogController.log(LOAD_SUCCEEDED)
-                        resumeOnce(Result.success(PartnerAd(ad = ad, details = emptyMap(), request = request)))
-                    }
-
-                    override fun onLoadSuccess(p0: MBridgeIds?) {
-                    }
-
-                    override fun onVideoLoadFail(
-                        p0: MBridgeIds?,
-                        error: String?,
-                    ) {
-                        PartnerLogController.log(LOAD_FAILED, "$error")
-                        resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
-                    }
-
-                    override fun onAdShow(p0: MBridgeIds?) {
-                        onShowSuccess()
-                    }
-
-                    override fun onAdClose(
-                        p0: MBridgeIds?,
-                        rewardInfo: RewardInfo?,
-                    ) {
-                        PartnerLogController.log(DID_REWARD)
-                        listener.onPartnerAdRewarded(
-                            PartnerAd(ad = ad, details = emptyMap(), request = request),
-                        )
-                        PartnerLogController.log(DID_DISMISS)
-                        listener.onPartnerAdDismissed(
-                            PartnerAd(ad = ad, details = emptyMap(), request = request),
-                            null,
-                        )
-                    }
-
-                    override fun onShowFail(
-                        p0: MBridgeIds?,
-                        p1: String?,
-                    ) {
-                        onShowFailure()
-                    }
-
-                    override fun onVideoAdClicked(p0: MBridgeIds?) {
-                        PartnerLogController.log(DID_CLICK)
-                        listener.onPartnerAdClicked(
-                            PartnerAd(ad = ad, details = emptyMap(), request = request),
-                        )
-                    }
-
-                    override fun onVideoComplete(p0: MBridgeIds?) {
-                    }
-
-                    override fun onEndcardShow(p0: MBridgeIds?) {
-                    }
-                },
+                RewardedAdLoadCallback(
+                    listener,
+                    request,
+                    PartnerAd(ad = ad, details = emptyMap(), request = request),
+                    WeakReference(continuation),
+                ),
             )
 
             ad.loadFromBid(adm)
@@ -890,71 +720,178 @@ class MintegralAdapter : PartnerAdapter {
             val ad = MBRewardVideoHandler(context, request.partnerPlacement, partnerUnitId)
             ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
             ad.setRewardVideoListener(
-                object : RewardVideoListener {
-                    fun resumeOnce(result: Result<PartnerAd>) {
-                        if (continuation.isActive) {
-                            continuation.resume(result)
-                        }
-                    }
-
-                    override fun onVideoLoadSuccess(p0: MBridgeIds?) {
-                        PartnerLogController.log(LOAD_SUCCEEDED)
-                        resumeOnce(Result.success(PartnerAd(ad = ad, details = emptyMap(), request = request)))
-                    }
-
-                    override fun onLoadSuccess(p0: MBridgeIds?) {
-                    }
-
-                    override fun onVideoLoadFail(
-                        p0: MBridgeIds?,
-                        error: String?,
-                    ) {
-                        PartnerLogController.log(LOAD_FAILED, "$error")
-                        resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
-                    }
-
-                    override fun onAdShow(p0: MBridgeIds?) {
-                        onShowSuccess()
-                    }
-
-                    override fun onAdClose(
-                        p0: MBridgeIds?,
-                        rewardInfo: RewardInfo?,
-                    ) {
-                        PartnerLogController.log(DID_REWARD)
-                        listener.onPartnerAdRewarded(
-                            PartnerAd(ad = ad, details = emptyMap(), request = request),
-                        )
-                        PartnerLogController.log(DID_DISMISS)
-                        listener.onPartnerAdDismissed(
-                            PartnerAd(ad = ad, details = emptyMap(), request = request),
-                            null,
-                        )
-                    }
-
-                    override fun onShowFail(
-                        p0: MBridgeIds?,
-                        p1: String?,
-                    ) {
-                        onShowFailure()
-                    }
-
-                    override fun onVideoAdClicked(p0: MBridgeIds?) {
-                        PartnerLogController.log(DID_CLICK)
-                        listener.onPartnerAdClicked(
-                            PartnerAd(ad = ad, details = emptyMap(), request = request),
-                        )
-                    }
-
-                    override fun onVideoComplete(p0: MBridgeIds?) {
-                    }
-
-                    override fun onEndcardShow(p0: MBridgeIds?) {
-                    }
-                },
+                RewardedAdLoadCallback(
+                    listener,
+                    request,
+                    PartnerAd(ad = ad, details = emptyMap(), request = request),
+                    WeakReference(continuation),
+                ),
             )
 
             ad.load()
         }
+    }
+}
+
+/**
+ * Callback implementation for Mintegral interstitial ad events.
+ *
+ * @param listener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
+ * @param request A [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
+ * @param partnerAd The [PartnerAd] object containing the ad to be shown.
+ * @param continuationRef A [WeakReference] to the [CancellableContinuation] for the current ad load call.
+ */
+private class InterstitialAdLoadCallback(
+    private val listener: PartnerAdListener,
+    private val request: PartnerAdLoadRequest,
+    private val partnerAd: PartnerAd,
+    private val continuationRef: WeakReference<CancellableContinuation<Result<PartnerAd>>>,
+) : InterstitialVideoListener {
+    override fun onLoadSuccess(p0: MBridgeIds?) {
+    }
+
+    override fun onVideoLoadSuccess(p0: MBridgeIds?) {
+        PartnerLogController.log(LOAD_SUCCEEDED)
+
+        continuationRef.get()?.let {
+            if (it.isActive) {
+                it.resume(Result.success(partnerAd))
+            }
+        }
+    }
+
+    override fun onVideoLoadFail(
+        p0: MBridgeIds?,
+        error: String?,
+    ) {
+        PartnerLogController.log(
+            LOAD_FAILED,
+            "Placement: ${request.partnerPlacement}. Error: $error",
+        )
+
+        continuationRef.get()?.let {
+            if (it.isActive) {
+                it.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
+            }
+        }
+    }
+
+    override fun onAdShow(p0: MBridgeIds?) {
+        onShowSuccess()
+    }
+
+    override fun onAdClose(
+        p0: MBridgeIds?,
+        p1: RewardInfo?,
+    ) {
+        PartnerLogController.log(DID_DISMISS)
+        listener.onPartnerAdDismissed(
+            partnerAd,
+            null,
+        )
+    }
+
+    override fun onShowFail(
+        p0: MBridgeIds?,
+        p1: String?,
+    ) {
+        onShowFailure()
+    }
+
+    override fun onVideoAdClicked(p0: MBridgeIds?) {
+        PartnerLogController.log(DID_CLICK)
+        listener.onPartnerAdClicked(
+            partnerAd,
+        )
+    }
+
+    override fun onVideoComplete(p0: MBridgeIds?) {
+        PartnerLogController.log(CUSTOM, "onVideoComplete")
+    }
+
+    override fun onAdCloseWithIVReward(
+        p0: MBridgeIds?,
+        p1: RewardInfo?,
+    ) {
+        PartnerLogController.log(CUSTOM, "onAdCloseWithIVReward")
+    }
+
+    override fun onEndcardShow(p0: MBridgeIds?) {
+        PartnerLogController.log(CUSTOM, "onEndcardShow")
+    }
+}
+
+/**
+ * Callback implementation for Mintegral rewarded ad events.
+ *
+ * @param listener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
+ * @param request A [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
+ * @param partnerAd The [PartnerAd] object containing the ad to be shown.
+ * @param continuationRef A [WeakReference] to the [CancellableContinuation] for the current ad load call.
+ */
+private class RewardedAdLoadCallback(
+    private val listener: PartnerAdListener,
+    private val request: PartnerAdLoadRequest,
+    private val partnerAd: PartnerAd,
+    private val continuationRef: WeakReference<CancellableContinuation<Result<PartnerAd>>>,
+) : RewardVideoListener {
+    override fun onVideoLoadSuccess(p0: MBridgeIds?) {
+        PartnerLogController.log(LOAD_SUCCEEDED)
+        continuationRef.get()?.let {
+            if (it.isActive) {
+                it.resume(Result.success(partnerAd))
+            }
+        }
+    }
+
+    override fun onLoadSuccess(p0: MBridgeIds?) {
+    }
+
+    override fun onVideoLoadFail(
+        p0: MBridgeIds?,
+        error: String?,
+    ) {
+        PartnerLogController.log(LOAD_FAILED, "$error")
+
+        continuationRef.get()?.let {
+            if (it.isActive) {
+                it.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
+            }
+        }
+    }
+
+    override fun onAdShow(p0: MBridgeIds?) {
+        onShowSuccess()
+    }
+
+    override fun onAdClose(
+        p0: MBridgeIds?,
+        rewardInfo: RewardInfo?,
+    ) {
+        PartnerLogController.log(DID_REWARD)
+        listener.onPartnerAdRewarded(partnerAd)
+
+        PartnerLogController.log(DID_DISMISS)
+        listener.onPartnerAdDismissed(partnerAd, null)
+    }
+
+    override fun onShowFail(
+        p0: MBridgeIds?,
+        p1: String?,
+    ) {
+        onShowFailure()
+    }
+
+    override fun onVideoAdClicked(p0: MBridgeIds?) {
+        PartnerLogController.log(DID_CLICK)
+        listener.onPartnerAdClicked(partnerAd)
+    }
+
+    override fun onVideoComplete(p0: MBridgeIds?) {
+        PartnerLogController.log(CUSTOM, "onVideoComplete")
+    }
+
+    override fun onEndcardShow(p0: MBridgeIds?) {
+        PartnerLogController.log(CUSTOM, "onEndcardShow")
     }
 }
