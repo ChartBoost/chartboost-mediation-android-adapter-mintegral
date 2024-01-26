@@ -757,6 +757,8 @@ private class InterstitialAdLoadCallback(
             if (it.isActive) {
                 it.resume(Result.success(partnerAd))
             }
+        } ?: run {
+            PartnerLogController.log(CUSTOM, "Unable to resume continuation for onVideoLoadSuccess. Continuation is null.")
         }
     }
 
@@ -773,11 +775,14 @@ private class InterstitialAdLoadCallback(
             if (it.isActive) {
                 it.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
             }
+        } ?: run {
+            PartnerLogController.log(CUSTOM, "Unable to resume continuation for onVideoLoadFail. Continuation is null.")
         }
     }
 
     override fun onAdShow(p0: MBridgeIds?) {
         onShowSuccess()
+        onShowSuccess = {}
     }
 
     override fun onAdClose(
@@ -796,6 +801,7 @@ private class InterstitialAdLoadCallback(
         p1: String?,
     ) {
         onShowFailure()
+        onShowFailure = {}
     }
 
     override fun onVideoAdClicked(p0: MBridgeIds?) {
@@ -841,6 +847,8 @@ private class RewardedAdLoadCallback(
             if (it.isActive) {
                 it.resume(Result.success(partnerAd))
             }
+        } ?: run {
+            PartnerLogController.log(CUSTOM, "Unable to resume continuation for onVideoLoadSuccess. Continuation is null.")
         }
     }
 
@@ -857,11 +865,14 @@ private class RewardedAdLoadCallback(
             if (it.isActive) {
                 it.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
             }
+        } ?: run {
+            PartnerLogController.log(CUSTOM, "Unable to resume continuation for onVideoLoadFail. Continuation is null.")
         }
     }
 
     override fun onAdShow(p0: MBridgeIds?) {
         onShowSuccess()
+        onShowSuccess = {}
     }
 
     override fun onAdClose(
@@ -880,6 +891,7 @@ private class RewardedAdLoadCallback(
         p1: String?,
     ) {
         onShowFailure()
+        onShowFailure = {}
     }
 
     override fun onVideoAdClicked(p0: MBridgeIds?) {
