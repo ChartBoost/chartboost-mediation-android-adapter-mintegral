@@ -3,6 +3,15 @@
 Note the first digit of every adapter version corresponds to the major version of the Chartboost Mediation SDK compatible with that adapter. 
 Adapters are compatible with any Chartboost Mediation SDK version within that major version.
 
+### 4.16.7.11.0
+- This version of the adapter has been certified with Mintegral SDK 16.7.11.
+
+### 4.16.6.71.0
+- This version of the adapter has been certified with Mintegral SDK 16.6.71.
+
+### 4.16.6.31.0
+- This version of the adapter has been certified with Mintegral SDK 16.6.31.
+
 ### 4.16.3.91.6
 - Fix memory leaks that could occur when fullscreen ads are shown from an `Activity`.
 
