@@ -35,21 +35,6 @@ import kotlin.coroutines.resume
 class MintegralAdapter : PartnerAdapter {
     companion object {
         /**
-         * Flag that can optionally be set to mute video creatives served by Mintegral. This can be
-         * set at any time and will take effect for the next ad request.
-         *
-         * https://dev.mintegral.com/doc/index.html?file=sdk-m_sdk-android&lang=en
-         */
-        var mute = false
-            set(value) {
-                field = value
-                PartnerLogController.log(
-                    CUSTOM,
-                    "Mintegral video creatives will be ${if (value) "muted" else "unmuted"}.",
-                )
-            }
-
-        /**
          * Lambda to be called for a successful Mintegral ad show.
          */
         internal var onShowSuccess: () -> Unit = {}
@@ -71,42 +56,14 @@ class MintegralAdapter : PartnerAdapter {
     }
 
     /**
+     * The Mintegral adapter configuration.
+     */
+    override var configuration: PartnerAdapterConfiguration = MintegralAdapterConfiguration
+
+    /**
      * Track whether the Mintegral SDK has been successfully initialized.
      */
     private var isSdkInitialized = false
-
-    /**
-     * Get the Mintegral SDK version.
-     */
-    override val partnerSdkVersion: String
-        get() = MBConfiguration.SDK_VERSION
-
-    /**
-     * Get the Mintegral adapter version.
-     *
-     * You may version the adapter using any preferred convention, but it is recommended to apply the
-     * following format if the adapter will be published by Chartboost Mediation:
-     *
-     * Chartboost Mediation.Partner.Adapter
-     *
-     * "Chartboost Mediation" represents the Chartboost Mediation SDK’s major version that is compatible with this adapter. This must be 1 digit.
-     * "Partner" represents the partner SDK’s major.minor.patch.x (where x is optional) version that is compatible with this adapter. This can be 3-4 digits.
-     * "Adapter" represents this adapter’s version (starting with 0), which resets to 0 when the partner SDK’s version changes. This must be 1 digit.
-     */
-    override val adapterVersion: String
-        get() = BuildConfig.CHARTBOOST_MEDIATION_MINTEGRAL_ADAPTER_VERSION
-
-    /**
-     * Get the partner name for internal uses.
-     */
-    override val partnerId: String
-        get() = "mintegral"
-
-    /**
-     * Get the partner name for external uses.
-     */
-    override val partnerDisplayName: String
-        get() = "Mintegral"
 
     /**
      * Initialize the Mintegral SDK so that it is ready to request ads.
@@ -595,7 +552,9 @@ class MintegralAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         return suspendCancellableCoroutine { continuation ->
             val ad = MBBidInterstitialVideoHandler(context, request.partnerPlacement, partnerUnitId)
-            ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
+            ad.playVideoMute(
+                if (MintegralAdapterConfiguration.mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE,
+            )
             ad.setInterstitialVideoListener(
                 InterstitialAdLoadCallback(
                     listener,
@@ -627,7 +586,9 @@ class MintegralAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         return suspendCancellableCoroutine { continuation ->
             val ad = MBInterstitialVideoHandler(context, request.partnerPlacement, partnerUnitId)
-            ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
+            ad.playVideoMute(
+                if (MintegralAdapterConfiguration.mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE,
+            )
             ad.setInterstitialVideoListener(
                 InterstitialAdLoadCallback(
                     listener,
@@ -686,7 +647,9 @@ class MintegralAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         return suspendCancellableCoroutine { continuation ->
             val ad = MBBidRewardVideoHandler(context, request.partnerPlacement, partnerUnitId)
-            ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
+            ad.playVideoMute(
+                if (MintegralAdapterConfiguration.mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE,
+            )
             ad.setRewardVideoListener(
                 RewardedAdLoadCallback(
                     listener,
@@ -718,7 +681,9 @@ class MintegralAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         return suspendCancellableCoroutine { continuation ->
             val ad = MBRewardVideoHandler(context, request.partnerPlacement, partnerUnitId)
-            ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
+            ad.playVideoMute(
+                if (MintegralAdapterConfiguration.mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE,
+            )
             ad.setRewardVideoListener(
                 RewardedAdLoadCallback(
                     listener,
