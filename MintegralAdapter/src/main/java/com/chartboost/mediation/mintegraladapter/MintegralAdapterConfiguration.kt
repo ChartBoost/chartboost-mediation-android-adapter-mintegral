@@ -44,8 +44,8 @@ object MintegralAdapterConfiguration : PartnerAdapterConfiguration {
         set(value) {
             field = value
             PartnerLogController.log(
-                    PartnerLogController.PartnerAdapterEvents.CUSTOM,
-                    "Mintegral video creatives will be ${if (value) "muted" else "unmuted"}.",
+                PartnerLogController.PartnerAdapterEvents.CUSTOM,
+                "Mintegral video creatives will be ${if (value) "muted" else "unmuted"}.",
             )
         }
 }

@@ -87,7 +87,7 @@ class MintegralAdapter : PartnerAdapter {
             ).trim()
 
         if (!canInitialize(appId, appKey)) {
-            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS))
+            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.InitializationError.InvalidCredentials))
         }
 
         return suspendCancellableCoroutine { continuation ->
@@ -110,7 +110,7 @@ class MintegralAdapter : PartnerAdapter {
                         override fun onInitFail(error: String?) {
                             PartnerLogController.log(SETUP_FAILED, "$error")
                             resumeOnce(
-                                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN)),
+                                Result.failure(ChartboostMediationAdException(ChartboostMediationError.InitializationError.Unknown)),
                             )
                         }
                     },
@@ -250,7 +250,7 @@ class MintegralAdapter : PartnerAdapter {
         val unitId = request.partnerSettings["mintegral_unit_id"] ?: request.partnerSettings["unit_id"] ?: ""
 
         if (!canLoadAd(context, request.partnerPlacement, unitId)) {
-            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_INVALID_PARTNER_PLACEMENT))
+            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.LoadError.InvalidPartnerPlacement))
         }
 
         return when (request.format.key) {
@@ -259,7 +259,7 @@ class MintegralAdapter : PartnerAdapter {
             AdFormat.REWARDED.key -> loadRewardedAd(context, request, unitId, partnerAdListener)
             else -> {
                 PartnerLogController.log(LOAD_FAILED)
-                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNSUPPORTED_AD_FORMAT))
+                Result.failure(ChartboostMediationAdException(ChartboostMediationError.LoadError.UnsupportedAdFormat))
             }
         }
     }
@@ -301,7 +301,7 @@ class MintegralAdapter : PartnerAdapter {
 
                 if (failed) {
                     PartnerLogController.log(SHOW_FAILED)
-                    resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_AD_NOT_READY)))
+                    resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.ShowError.AdNotReady)))
                     return@suspendCancellableCoroutine
                 }
 
@@ -312,12 +312,12 @@ class MintegralAdapter : PartnerAdapter {
 
                 onShowFailure = {
                     PartnerLogController.log(SHOW_FAILED)
-                    resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_UNKNOWN)))
+                    resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.ShowError.Unknown)))
                 }
             }
         } ?: run {
             PartnerLogController.log(SHOW_FAILED, "Ad is null.")
-            Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_AD_NOT_FOUND))
+            Result.failure(ChartboostMediationAdException(ChartboostMediationError.ShowError.AdNotFound))
         }
     }
 
@@ -341,7 +341,7 @@ class MintegralAdapter : PartnerAdapter {
             Result.success(partnerAd)
         } ?: run {
             PartnerLogController.log(INVALIDATE_FAILED, "Ad is null.")
-            Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INVALIDATE_FAILURE_AD_NOT_FOUND))
+            Result.failure(ChartboostMediationAdException(ChartboostMediationError.InvalidateError.AdNotFound))
         }
     }
 
@@ -445,7 +445,7 @@ class MintegralAdapter : PartnerAdapter {
                             LOAD_FAILED,
                             "Placement: ${request.partnerPlacement}. Error: $error",
                         )
-                        resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
+                        resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.LoadError.Unknown)))
                     }
 
                     override fun onLoadSuccessed(p0: MBridgeIds?) {
@@ -738,7 +738,7 @@ private class InterstitialAdLoadCallback(
 
         continuationRef.get()?.let {
             if (it.isActive) {
-                it.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
+                it.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.LoadError.Unknown)))
             }
         } ?: run {
             PartnerLogController.log(CUSTOM, "Unable to resume continuation for onVideoLoadFail. Continuation is null.")
@@ -828,7 +828,7 @@ private class RewardedAdLoadCallback(
 
         continuationRef.get()?.let {
             if (it.isActive) {
-                it.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
+                it.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.LoadError.Unknown)))
             }
         } ?: run {
             PartnerLogController.log(CUSTOM, "Unable to resume continuation for onVideoLoadFail. Continuation is null.")
