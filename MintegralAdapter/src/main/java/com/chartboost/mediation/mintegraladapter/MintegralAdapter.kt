@@ -169,7 +169,6 @@ class MintegralAdapter : PartnerAdapter {
         )
 
         MBridgeSDKFactory.getMBridgeSDK()?.setDoNotTrackStatus(isUserUnderage)
-
     }
 
     /**
@@ -311,7 +310,7 @@ class MintegralAdapter : PartnerAdapter {
     override fun setConsents(
         context: Context,
         consents: Map<ConsentKey, ConsentValue>,
-        modifiedKeys: Set<ConsentKey>
+        modifiedKeys: Set<ConsentKey>,
     ) {
         if (!isSdkInitialized) {
             return
@@ -329,14 +328,14 @@ class MintegralAdapter : PartnerAdapter {
                 },
             )
 
-                MBridgeSDKFactory.getMBridgeSDK()?.setConsentStatus(
-                    context,
-                    if (it == ConsentValues.GRANTED) {
-                        MBridgeConstans.IS_SWITCH_ON
-                    } else {
-                        MBridgeConstans.IS_SWITCH_OFF
-                    },
-                )
+            MBridgeSDKFactory.getMBridgeSDK()?.setConsentStatus(
+                context,
+                if (it == ConsentValues.GRANTED) {
+                    MBridgeConstans.IS_SWITCH_ON
+                } else {
+                    MBridgeConstans.IS_SWITCH_OFF
+                },
+            )
         }
 
         consents[ConsentKeys.USP]?.let {
