@@ -3,9 +3,23 @@
 Note the first digit of every adapter version corresponds to the major version of the Chartboost Mediation SDK compatible with that adapter. 
 Adapters are compatible with any Chartboost Mediation SDK version within that major version.
 
-### 5.16.7.41.0
-- This version of the adapter has been certified with Mintegral SDK 16.7.41.
+### 5.16.7.71.0
 - This version of the adapter supports Chartboost Mediation SDK version 5.+.
+
+### 4.16.7.71.0
+- This version of the adapter has been certified with Mintegral SDK 16.7.71.
+
+### 4.16.7.61.0
+- This version of the adapter has been certified with Mintegral SDK 16.7.61.
+
+### 4.16.7.51.0
+- This version of the adapter has been certified with Mintegral SDK 16.7.51.
+
+### 4.16.7.41.0
+- This version of the adapter has been certified with Mintegral SDK 16.7.41.
+
+### 4.16.7.31.0
+- This version of the adapter has been certified with Mintegral SDK 16.7.31.
 
 ### 4.16.7.21.0
 - This version of the adapter has been certified with Mintegral SDK 16.7.21.
