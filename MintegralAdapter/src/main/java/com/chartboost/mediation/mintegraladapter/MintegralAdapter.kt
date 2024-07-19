@@ -11,6 +11,7 @@ import android.app.Activity
 import android.content.Context
 import android.util.Size
 import android.widget.FrameLayout
+import com.chartboost.chartboostmediationsdk.ad.ChartboostMediationBannerAdView.ChartboostMediationBannerSize.Companion.asSize
 import com.chartboost.chartboostmediationsdk.domain.*
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.BIDDER_INFO_FETCH_FAILED
@@ -40,7 +41,11 @@ import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerA
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USER_IS_UNDERAGE
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USP_CONSENT_DENIED
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USP_CONSENT_GRANTED
-import com.chartboost.core.consent.*
+import com.chartboost.core.consent.ConsentKey
+import com.chartboost.core.consent.ConsentKeys
+import com.chartboost.core.consent.ConsentManagementPlatform
+import com.chartboost.core.consent.ConsentValue
+import com.chartboost.core.consent.ConsentValues
 import com.chartboost.mediation.mintegraladapter.MintegralAdapter.Companion.onShowFailure
 import com.chartboost.mediation.mintegraladapter.MintegralAdapter.Companion.onShowSuccess
 import com.mbridge.msdk.MBridgeConstans
@@ -432,7 +437,7 @@ class MintegralAdapter : PartnerAdapter {
         listener: PartnerAdListener,
     ): Result<PartnerAd> {
         val adm = request.adm
-        val size = getMintegralBannerSize(request.bannerSize?.size)
+        val size = getMintegralBannerSize(request.bannerSize?.asSize())
 
         return suspendCancellableCoroutine { continuation ->
             val ad = MBBannerView(context)
