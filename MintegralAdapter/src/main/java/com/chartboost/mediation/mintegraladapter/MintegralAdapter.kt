@@ -1,6 +1,6 @@
 /*
  * Copyright 2023-2024 Chartboost, Inc.
- * 
+ *
  * Use of this source code is governed by an MIT-style
  * license that can be found in the LICENSE file.
  */
@@ -11,9 +11,41 @@ import android.app.Activity
 import android.content.Context
 import android.util.Size
 import android.widget.FrameLayout
-import com.chartboost.heliumsdk.domain.*
-import com.chartboost.heliumsdk.utils.PartnerLogController
-import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.*
+import com.chartboost.chartboostmediationsdk.ad.ChartboostMediationBannerAdView.ChartboostMediationBannerSize.Companion.asSize
+import com.chartboost.chartboostmediationsdk.domain.*
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.BIDDER_INFO_FETCH_FAILED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.BIDDER_INFO_FETCH_STARTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.BIDDER_INFO_FETCH_SUCCEEDED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.CUSTOM
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_CLICK
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_DISMISS
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_REWARD
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_TRACK_IMPRESSION
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_CONSENT_DENIED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_CONSENT_GRANTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_CONSENT_UNKNOWN
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.INVALIDATE_FAILED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.INVALIDATE_STARTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.INVALIDATE_SUCCEEDED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.LOAD_FAILED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.LOAD_STARTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.LOAD_SUCCEEDED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SETUP_FAILED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SETUP_STARTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SETUP_SUCCEEDED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SHOW_FAILED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SHOW_STARTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SHOW_SUCCEEDED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USER_IS_NOT_UNDERAGE
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USER_IS_UNDERAGE
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USP_CONSENT_DENIED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USP_CONSENT_GRANTED
+import com.chartboost.core.consent.ConsentKey
+import com.chartboost.core.consent.ConsentKeys
+import com.chartboost.core.consent.ConsentManagementPlatform
+import com.chartboost.core.consent.ConsentValue
+import com.chartboost.core.consent.ConsentValues
 import com.chartboost.mediation.mintegraladapter.MintegralAdapter.Companion.onShowFailure
 import com.chartboost.mediation.mintegraladapter.MintegralAdapter.Companion.onShowSuccess
 import com.mbridge.msdk.MBridgeConstans
@@ -34,21 +66,6 @@ import kotlin.coroutines.resume
  */
 class MintegralAdapter : PartnerAdapter {
     companion object {
-        /**
-         * Flag that can optionally be set to mute video creatives served by Mintegral. This can be
-         * set at any time and will take effect for the next ad request.
-         *
-         * https://dev.mintegral.com/doc/index.html?file=sdk-m_sdk-android&lang=en
-         */
-        var mute = false
-            set(value) {
-                field = value
-                PartnerLogController.log(
-                    CUSTOM,
-                    "Mintegral video creatives will be ${if (value) "muted" else "unmuted"}.",
-                )
-            }
-
         /**
          * Lambda to be called for a successful Mintegral ad show.
          */
@@ -71,42 +88,14 @@ class MintegralAdapter : PartnerAdapter {
     }
 
     /**
+     * The Mintegral adapter configuration.
+     */
+    override var configuration: PartnerAdapterConfiguration = MintegralAdapterConfiguration
+
+    /**
      * Track whether the Mintegral SDK has been successfully initialized.
      */
     private var isSdkInitialized = false
-
-    /**
-     * Get the Mintegral SDK version.
-     */
-    override val partnerSdkVersion: String
-        get() = MBConfiguration.SDK_VERSION
-
-    /**
-     * Get the Mintegral adapter version.
-     *
-     * You may version the adapter using any preferred convention, but it is recommended to apply the
-     * following format if the adapter will be published by Chartboost Mediation:
-     *
-     * Chartboost Mediation.Partner.Adapter
-     *
-     * "Chartboost Mediation" represents the Chartboost Mediation SDK’s major version that is compatible with this adapter. This must be 1 digit.
-     * "Partner" represents the partner SDK’s major.minor.patch.x (where x is optional) version that is compatible with this adapter. This can be 3-4 digits.
-     * "Adapter" represents this adapter’s version (starting with 0), which resets to 0 when the partner SDK’s version changes. This must be 1 digit.
-     */
-    override val adapterVersion: String
-        get() = BuildConfig.CHARTBOOST_MEDIATION_MINTEGRAL_ADAPTER_VERSION
-
-    /**
-     * Get the partner name for internal uses.
-     */
-    override val partnerId: String
-        get() = "mintegral"
-
-    /**
-     * Get the partner name for external uses.
-     */
-    override val partnerDisplayName: String
-        get() = "Mintegral"
 
     /**
      * Initialize the Mintegral SDK so that it is ready to request ads.
@@ -117,7 +106,7 @@ class MintegralAdapter : PartnerAdapter {
     override suspend fun setUp(
         context: Context,
         partnerConfiguration: PartnerConfiguration,
-    ): Result<Unit> {
+    ): Result<Map<String, Any>> {
         PartnerLogController.log(SETUP_STARTED)
 
         val appId =
@@ -130,7 +119,7 @@ class MintegralAdapter : PartnerAdapter {
             ).trim()
 
         if (!canInitialize(appId, appKey)) {
-            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS))
+            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.InitializationError.InvalidCredentials))
         }
 
         return suspendCancellableCoroutine { continuation ->
@@ -139,7 +128,7 @@ class MintegralAdapter : PartnerAdapter {
                     getMBConfigurationMap(appId, appKey),
                     context,
                     object : SDKInitStatusListener {
-                        fun resumeOnce(result: Result<Unit>) {
+                        fun resumeOnce(result: Result<Map<String, Any>>) {
                             if (continuation.isActive) {
                                 continuation.resume(result)
                             }
@@ -147,13 +136,14 @@ class MintegralAdapter : PartnerAdapter {
 
                         override fun onInitSuccess() {
                             isSdkInitialized = true
-                            resumeOnce(Result.success(PartnerLogController.log(SETUP_SUCCEEDED)))
+                            PartnerLogController.log(SETUP_SUCCEEDED)
+                            resumeOnce(Result.success(emptyMap()))
                         }
 
                         override fun onInitFail(error: String?) {
                             PartnerLogController.log(SETUP_FAILED, "$error")
                             resumeOnce(
-                                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN)),
+                                Result.failure(ChartboostMediationAdException(ChartboostMediationError.InitializationError.Unknown)),
                             )
                         }
                     },
@@ -163,113 +153,47 @@ class MintegralAdapter : PartnerAdapter {
     }
 
     /**
-     * Notify the Mintegral SDK of the GDPR applicability and consent status.
-     *
-     * @param context The current [Context].
-     * @param applies True if GDPR applies, false otherwise.
-     * @param gdprConsentStatus The user's GDPR consent status.
-     */
-    override fun setGdpr(
-        context: Context,
-        applies: Boolean?,
-        gdprConsentStatus: GdprConsentStatus,
-    ) {
-        PartnerLogController.log(
-            when (applies) {
-                true -> GDPR_APPLICABLE
-                false -> GDPR_NOT_APPLICABLE
-                else -> GDPR_UNKNOWN
-            },
-        )
-
-        PartnerLogController.log(
-            when (gdprConsentStatus) {
-                GdprConsentStatus.GDPR_CONSENT_UNKNOWN -> GDPR_CONSENT_UNKNOWN
-                GdprConsentStatus.GDPR_CONSENT_GRANTED -> GDPR_CONSENT_GRANTED
-                GdprConsentStatus.GDPR_CONSENT_DENIED -> GDPR_CONSENT_DENIED
-            },
-        )
-
-        if (applies == true && isSdkInitialized) {
-            MBridgeSDKFactory.getMBridgeSDK()?.setConsentStatus(
-                context,
-                if (gdprConsentStatus == GdprConsentStatus.GDPR_CONSENT_GRANTED) {
-                    MBridgeConstans.IS_SWITCH_ON
-                } else {
-                    MBridgeConstans.IS_SWITCH_OFF
-                },
-            )
-        }
-    }
-
-    /**
-     * Notify Mintegral of the user's CCPA consent status, if applicable.
-     *
-     * @param context The current [Context].
-     * @param hasGrantedCcpaConsent True if the user has granted CCPA consent, false otherwise.
-     * @param privacyString The CCPA privacy string.
-     */
-    override fun setCcpaConsent(
-        context: Context,
-        hasGrantedCcpaConsent: Boolean,
-        privacyString: String,
-    ) {
-        PartnerLogController.log(
-            if (hasGrantedCcpaConsent) {
-                CCPA_CONSENT_GRANTED
-            } else {
-                CCPA_CONSENT_DENIED
-            },
-        )
-
-        if (isSdkInitialized) {
-            MBridgeSDKFactory.getMBridgeSDK()
-                ?.setDoNotTrackStatus(!hasGrantedCcpaConsent)
-        }
-    }
-
-    /**
      * Notify Mintegral of the COPPA subjectivity.
      *
      * @param context The current [Context].
-     * @param isSubjectToCoppa True if the user is subject to COPPA, false otherwise.
+     * @param isUserUnderage True if the user is subject to COPPA, false otherwise.
      */
-    override fun setUserSubjectToCoppa(
+    override fun setIsUserUnderage(
         context: Context,
-        isSubjectToCoppa: Boolean,
+        isUserUnderage: Boolean,
     ) {
+        if (!isSdkInitialized) {
+            return
+        }
         PartnerLogController.log(
-            if (isSubjectToCoppa) {
-                COPPA_SUBJECT
+            if (isUserUnderage) {
+                USER_IS_UNDERAGE
             } else {
-                COPPA_NOT_SUBJECT
+                USER_IS_NOT_UNDERAGE
             },
         )
 
-        if (isSdkInitialized) {
-            MBridgeSDKFactory.getMBridgeSDK()
-                ?.setDoNotTrackStatus(isSubjectToCoppa)
-        }
+        MBridgeSDKFactory.getMBridgeSDK()?.setDoNotTrackStatus(isUserUnderage)
     }
 
     /**
      * Get a bid token if network bidding is supported.
      *
      * @param context The current [Context].
-     * @param request The [PreBidRequest] instance containing relevant data for the current bid request.
+     * @param request The [PartnerAdPreBidRequest] instance containing relevant data for the current bid request.
      *
      * @return A Map of biddable token Strings.
      */
     override suspend fun fetchBidderInformation(
         context: Context,
-        request: PreBidRequest,
-    ): Map<String, String> {
+        request: PartnerAdPreBidRequest,
+    ): Result<Map<String, String>> {
         PartnerLogController.log(BIDDER_INFO_FETCH_STARTED)
 
         val token = BidManager.getBuyerUid(context) ?: ""
 
         PartnerLogController.log(if (token.isNotEmpty()) BIDDER_INFO_FETCH_SUCCEEDED else BIDDER_INFO_FETCH_FAILED)
-        return mapOf("buyeruid" to token)
+        return Result.success(mapOf("buyeruid" to token))
     }
 
     /**
@@ -290,19 +214,19 @@ class MintegralAdapter : PartnerAdapter {
 
         // Programmatic and non-programmatic bid responses for Mintegral currently employ two different
         // key names for the Mintegral unit ID.
-        val unitId = request.partnerSettings["mintegral_unit_id"] ?: request.partnerSettings["unit_id"] ?: ""
+        val unitId = request.partnerSettings["mintegral_unit_id"] as? String ?: request.partnerSettings["unit_id"] as? String ?: ""
 
         if (!canLoadAd(context, request.partnerPlacement, unitId)) {
-            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_INVALID_PARTNER_PLACEMENT))
+            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.LoadError.InvalidPartnerPlacement))
         }
 
-        return when (request.format.key) {
-            AdFormat.BANNER.key, "adaptive_banner" -> loadBannerAd(context, request, unitId, partnerAdListener)
-            AdFormat.INTERSTITIAL.key -> loadInterstitialAd(context, request, unitId, partnerAdListener)
-            AdFormat.REWARDED.key -> loadRewardedAd(context, request, unitId, partnerAdListener)
+        return when (request.format) {
+            PartnerAdFormats.BANNER -> loadBannerAd(context, request, unitId, partnerAdListener)
+            PartnerAdFormats.INTERSTITIAL -> loadInterstitialAd(context, request, unitId, partnerAdListener)
+            PartnerAdFormats.REWARDED -> loadRewardedAd(context, request, unitId, partnerAdListener)
             else -> {
                 PartnerLogController.log(LOAD_FAILED)
-                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNSUPPORTED_AD_FORMAT))
+                Result.failure(ChartboostMediationAdException(ChartboostMediationError.LoadError.UnsupportedAdFormat))
             }
         }
     }
@@ -310,13 +234,13 @@ class MintegralAdapter : PartnerAdapter {
     /**
      * Attempt to show the currently loaded Mintegral ad.
      *
-     * @param context The current [Context]
+     * @param activity The current [Activity]
      * @param partnerAd The [PartnerAd] object containing the ad to be shown.
      *
      * @return Result.success(PartnerAd) if the ad was successfully shown, Result.failure(Exception) otherwise.
      */
     override suspend fun show(
-        context: Context,
+        activity: Activity,
         partnerAd: PartnerAd,
     ): Result<PartnerAd> {
         PartnerLogController.log(SHOW_STARTED)
@@ -344,7 +268,7 @@ class MintegralAdapter : PartnerAdapter {
 
                 if (failed) {
                     PartnerLogController.log(SHOW_FAILED)
-                    resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_AD_NOT_READY)))
+                    resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.ShowError.AdNotReady)))
                     return@suspendCancellableCoroutine
                 }
 
@@ -355,12 +279,12 @@ class MintegralAdapter : PartnerAdapter {
 
                 onShowFailure = {
                     PartnerLogController.log(SHOW_FAILED)
-                    resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_UNKNOWN)))
+                    resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.ShowError.Unknown)))
                 }
             }
         } ?: run {
             PartnerLogController.log(SHOW_FAILED, "Ad is null.")
-            Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_AD_NOT_FOUND))
+            Result.failure(ChartboostMediationAdException(ChartboostMediationError.ShowError.AdNotFound))
         }
     }
 
@@ -384,7 +308,59 @@ class MintegralAdapter : PartnerAdapter {
             Result.success(partnerAd)
         } ?: run {
             PartnerLogController.log(INVALIDATE_FAILED, "Ad is null.")
-            Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INVALIDATE_FAILURE_AD_NOT_FOUND))
+            Result.failure(ChartboostMediationAdException(ChartboostMediationError.InvalidateError.AdNotFound))
+        }
+    }
+
+    override fun setConsents(
+        context: Context,
+        consents: Map<ConsentKey, ConsentValue>,
+        modifiedKeys: Set<ConsentKey>,
+    ) {
+        if (!isSdkInitialized) {
+            return
+        }
+
+        val consent = consents[configuration.partnerId]?.takeIf { it.isNotBlank() }
+            ?: consents[ConsentKeys.GDPR_CONSENT_GIVEN]?.takeIf { it.isNotBlank() }
+        consent?.let {
+            if (it == ConsentValues.DOES_NOT_APPLY) {
+                return@let
+            }
+            PartnerLogController.log(
+                when (it) {
+                    ConsentValues.GRANTED -> GDPR_CONSENT_GRANTED
+                    ConsentValues.DENIED -> GDPR_CONSENT_DENIED
+                    else -> GDPR_CONSENT_UNKNOWN
+                },
+            )
+
+            MBridgeSDKFactory.getMBridgeSDK()?.setConsentStatus(
+                context,
+                if (it == ConsentValues.GRANTED) {
+                    MBridgeConstans.IS_SWITCH_ON
+                } else {
+                    MBridgeConstans.IS_SWITCH_OFF
+                },
+            )
+        }
+
+        val hasGrantedUspConsent =
+            consents[ConsentKeys.CCPA_OPT_IN]?.takeIf { it.isNotBlank() }
+                ?.equals(ConsentValues.GRANTED)
+                ?: consents[ConsentKeys.USP]?.takeIf { it.isNotBlank() }
+                    ?.let { ConsentManagementPlatform.getUspConsentFromUspString(it) }
+        hasGrantedUspConsent?.let {
+            PartnerLogController.log(
+                if (hasGrantedUspConsent) {
+                    USP_CONSENT_GRANTED
+                } else {
+                    USP_CONSENT_DENIED
+                },
+            )
+
+            MBridgeSDKFactory.getMBridgeSDK()
+                ?.setDoNotTrackStatus(!hasGrantedUspConsent)
         }
     }
 
@@ -461,7 +437,7 @@ class MintegralAdapter : PartnerAdapter {
         listener: PartnerAdListener,
     ): Result<PartnerAd> {
         val adm = request.adm
-        val size = getMintegralBannerSize(request.size)
+        val size = getMintegralBannerSize(request.bannerSize?.asSize())
 
         return suspendCancellableCoroutine { continuation ->
             val ad = MBBannerView(context)
@@ -488,7 +464,7 @@ class MintegralAdapter : PartnerAdapter {
                             LOAD_FAILED,
                             "Placement: ${request.partnerPlacement}. Error: $error",
                         )
-                        resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
+                        resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.LoadError.Unknown)))
                     }
 
                     override fun onLoadSuccessed(p0: MBridgeIds?) {
@@ -595,7 +571,9 @@ class MintegralAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         return suspendCancellableCoroutine { continuation ->
             val ad = MBBidInterstitialVideoHandler(context, request.partnerPlacement, partnerUnitId)
-            ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
+            ad.playVideoMute(
+                if (MintegralAdapterConfiguration.mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE,
+            )
             ad.setInterstitialVideoListener(
                 InterstitialAdLoadCallback(
                     listener,
@@ -627,7 +605,9 @@ class MintegralAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         return suspendCancellableCoroutine { continuation ->
             val ad = MBInterstitialVideoHandler(context, request.partnerPlacement, partnerUnitId)
-            ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
+            ad.playVideoMute(
+                if (MintegralAdapterConfiguration.mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE,
+            )
             ad.setInterstitialVideoListener(
                 InterstitialAdLoadCallback(
                     listener,
@@ -686,7 +666,9 @@ class MintegralAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         return suspendCancellableCoroutine { continuation ->
             val ad = MBBidRewardVideoHandler(context, request.partnerPlacement, partnerUnitId)
-            ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
+            ad.playVideoMute(
+                if (MintegralAdapterConfiguration.mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE,
+            )
             ad.setRewardVideoListener(
                 RewardedAdLoadCallback(
                     listener,
@@ -718,7 +700,9 @@ class MintegralAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         return suspendCancellableCoroutine { continuation ->
             val ad = MBRewardVideoHandler(context, request.partnerPlacement, partnerUnitId)
-            ad.playVideoMute(if (mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE)
+            ad.playVideoMute(
+                if (MintegralAdapterConfiguration.mute) MBridgeConstans.REWARD_VIDEO_PLAY_MUTE else MBridgeConstans.REWARD_VIDEO_PLAY_NOT_MUTE,
+            )
             ad.setRewardVideoListener(
                 RewardedAdLoadCallback(
                     listener,
@@ -773,7 +757,7 @@ private class InterstitialAdLoadCallback(
 
         continuationRef.get()?.let {
             if (it.isActive) {
-                it.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
+                it.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.LoadError.Unknown)))
             }
         } ?: run {
             PartnerLogController.log(CUSTOM, "Unable to resume continuation for onVideoLoadFail. Continuation is null.")
@@ -863,7 +847,7 @@ private class RewardedAdLoadCallback(
 
         continuationRef.get()?.let {
             if (it.isActive) {
-                it.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
+                it.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.LoadError.Unknown)))
             }
         } ?: run {
             PartnerLogController.log(CUSTOM, "Unable to resume continuation for onVideoLoadFail. Continuation is null.")
