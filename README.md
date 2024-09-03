@@ -13,7 +13,7 @@ The Chartboost Mediation Mintegral adapter mediates Mintegral via the Chartboost
 
 In your `build.gradle`, add the following entry:
 ```
-    implementation "com.chartboost:chartboost-mediation-adapter-mintegral:4.16.8.31.0"
+    implementation "com.chartboost:chartboost-mediation-adapter-mintegral:4.16.8.41.0"
 ```
 
 ## Contributions
