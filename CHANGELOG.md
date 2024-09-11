@@ -5,6 +5,9 @@ Adapters are compatible with any Chartboost Mediation SDK version within that ma
 
 All official releases can be found on this repository's [releases page](https://github.com/ChartBoost/chartboost-mediation-android-adapter-mintegral/releases).
 
+### 5.16.8.51.0
+- This version of the adapter has been certified with Mintegral SDK 16.8.51.
+
 ### 4.16.8.51.0
 - This version of the adapter has been certified with Mintegral SDK 16.8.51.
 
