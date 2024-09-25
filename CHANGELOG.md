@@ -1,42 +1,50 @@
-## Changelog
+# Changelog
 
 Note the first digit of every adapter version corresponds to the major version of the Chartboost Mediation SDK compatible with that adapter. 
 Adapters are compatible with any Chartboost Mediation SDK version within that major version.
 
 All official releases can be found on this repository's [releases page](https://github.com/ChartBoost/chartboost-mediation-android-adapter-mintegral/releases).
 
-### 5.16.8.51.0
-- This version of the adapter has been certified with Mintegral SDK 16.8.51.
+## Table of Contents
+- [Mediation 5](#mediation-5)
+- [Mediation 4](#mediation-4)
 
-### 4.16.8.51.0
+## Mediation 5
+
+### 5.16.8.51.0
 - This version of the adapter has been certified with Mintegral SDK 16.8.51.
 
 ### 5.16.8.41.0
 - This version of the adapter has been certified with Mintegral SDK 16.8.41.
 
-### 4.16.8.41.0
-- This version of the adapter has been certified with Mintegral SDK 16.8.41.
-
 ### 5.16.8.31.0
-- This version of the adapter has been certified with Mintegral SDK 16.8.31.
-
-### 4.16.8.31.0
 - This version of the adapter has been certified with Mintegral SDK 16.8.31.
 
 ### 5.16.8.21.0
 - This version of the adapter has been certified with Mintegral SDK 16.8.21.
 
-### 4.16.8.21.0
-- This version of the adapter has been certified with Mintegral SDK 16.8.21.
-
 ### 5.16.8.11.0
-- This version of the adapter has been certified with Mintegral SDK 16.8.11.
-
-### 4.16.8.11.0
 - This version of the adapter has been certified with Mintegral SDK 16.8.11.
 
 ### 5.16.7.91.0
 - This version of the adapter supports Chartboost Mediation SDK version 5.+.
+
+## Mediation 4
+
+### 4.16.8.51.0
+- This version of the adapter has been certified with Mintegral SDK 16.8.51.
+
+### 4.16.8.41.0
+- This version of the adapter has been certified with Mintegral SDK 16.8.41.
+
+### 4.16.8.31.0
+- This version of the adapter has been certified with Mintegral SDK 16.8.31.
+
+### 4.16.8.21.0
+- This version of the adapter has been certified with Mintegral SDK 16.8.21.
+
+### 4.16.8.11.0
+- This version of the adapter has been certified with Mintegral SDK 16.8.11.
 
 ### 4.16.7.91.0
 - This version of the adapter has been certified with Mintegral SDK 16.7.91.
