@@ -34,6 +34,9 @@ All official releases can be found on this repository's [releases page](https://
 
 ## Mediation 4
 
+### 4.16.8.61.0
+- This version of the adapter has been certified with Mintegral SDK 16.8.61.
+
 ### 4.16.8.51.0
 - This version of the adapter has been certified with Mintegral SDK 16.8.51.
 
