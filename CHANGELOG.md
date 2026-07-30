@@ -11,6 +11,9 @@ All official releases can be found on this repository's [releases page](https://
 
 ## Mediation 5
 
+### 5.16.8.61.1
+- Allow fullscreen ads to load with a non-`Activity` context, e.g. from the fullscreen ad queue. Banner ads still require an `Activity` context.
+
 ### 5.16.8.61.0
 - This version of the adapter has been certified with Mintegral SDK 16.8.61.
 
