@@ -216,7 +216,7 @@ class MintegralAdapter : PartnerAdapter {
         // key names for the Mintegral unit ID.
         val unitId = request.partnerSettings["mintegral_unit_id"] as? String ?: request.partnerSettings["unit_id"] as? String ?: ""
 
-        if (!canLoadAd(context, request.partnerPlacement, unitId)) {
+        if (!canLoadAd(context, request.format, request.partnerPlacement, unitId)) {
             return Result.failure(ChartboostMediationAdException(ChartboostMediationError.LoadError.InvalidPartnerPlacement))
         }
 
@@ -393,6 +393,7 @@ class MintegralAdapter : PartnerAdapter {
      * Check whether ads can be loaded.
      *
      * @param context The current [Context].
+     * @param format The ad format to load.
      * @param partnerPlacement The placement for the ad.
      * @param partnerUnitId The unit ID for the ad.
      *
@@ -400,6 +401,7 @@ class MintegralAdapter : PartnerAdapter {
      */
     private fun canLoadAd(
         context: Context,
+        format: PartnerAdFormat,
         partnerPlacement: String,
         partnerUnitId: String,
     ): Boolean {
@@ -408,8 +410,11 @@ class MintegralAdapter : PartnerAdapter {
                 PartnerLogController.log(LOAD_FAILED, "The SDK is not initialized.")
                 false
             }
-            context !is Activity -> {
-                PartnerLogController.log(LOAD_FAILED, "Context must be an Activity.")
+            // Mintegral's fullscreen handlers take a plain Context (verified against MBridge
+            // 16.8.61), so fullscreen loads from the ad queue's application context are allowed.
+            // Banners stay Activity-bound so MBBannerView inherits the Activity theme.
+            format == PartnerAdFormats.BANNER && context !is Activity -> {
+                PartnerLogController.log(LOAD_FAILED, "Banner ads require an Activity context.")
                 false
             }
             partnerPlacement.isEmpty() || partnerUnitId.isEmpty() -> {
